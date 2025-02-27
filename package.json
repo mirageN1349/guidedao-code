@@ -1,0 +1,35 @@
+{
+  "name": "guidedao-code",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "guidedao-code": "./bin/guidedao-code.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@elizaos/adapter-sqlite": "0.25.6-alpha.1",
+    "@elizaos/core": "^0.25.8",
+    "better-sqlite3": "^11.8.1",
+    "boxen": "^8.0.1",
+    "chalk": "^5.4.1",
+    "diff": "^7.0.0",
+    "dotenv": "^16.4.7",
+    "figlet": "^1.8.0",
+    "glob": "^11.0.1",
+    "ora": "^8.2.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/diff": "^7.0.1",
+    "@types/figlet": "^1.7.0",
+    "typescript": "^5.7.3"
+  }
+}
