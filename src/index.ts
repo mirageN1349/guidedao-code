@@ -1,10 +1,12 @@
 import { AgentRuntime } from "@elizaos/core";
 import { setupAgent } from "./agent";
 import { startCLI } from "./cli";
+import { scanCodebase } from "./scanner";
 
-export const setupCodeAssistant = (projectPath: string) => {
-  // const codebase = scanCodebase(process.cwd()) // users/me/code/test/
+export const setupCodeAssistant = async (projectPath: string) => {
   const agent = setupAgent("");
 
-  startCLI(agent, projectPath);
+  const codebase = await scanCodebase(projectPath);
+
+  startCLI(agent, codebase);
 };

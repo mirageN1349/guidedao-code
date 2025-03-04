@@ -3,6 +3,7 @@ import { ModelProviderName } from "@elizaos/core";
 import { AgentRuntime } from "@elizaos/core";
 import Database from "better-sqlite3";
 import { SqliteDatabaseAdapter } from "@elizaos/adapter-sqlite";
+import { editFileAction } from "./actionManager";
 
 export const setupAgent = (codebase: any): AgentRuntime => {
   const character: Character = {
@@ -34,9 +35,19 @@ export const setupAgent = (codebase: any): AgentRuntime => {
     modelProvider: ModelProviderName.ANTHROPIC,
     character,
     databaseAdapter,
+    // actions: [editFileAction]
   });
 
   agent.initialize();
 
   return agent;
 };
+
+
+// {
+//   action: 'edit-file',
+//   filePath: '/src/cli.ts',
+//   prompt: 'What changes do you want to make to the codebase?'
+// }
+
+// ['edit', 'create', 'delete']
