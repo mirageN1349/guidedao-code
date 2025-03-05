@@ -3,8 +3,8 @@ import ora from "ora";
 
 import { AgentRuntime, generateText, ModelClass } from "@elizaos/core";
 import chalk from "chalk";
-import { Codebase } from "./scanner";
-import { LLMAction, actions, editFileAction } from "./actionManager";
+import { Codebase } from "./scanner.js";
+import { LLMAction, actions, editFileAction } from "./actionManager.js";
 
 export const startCLI = (agent: AgentRuntime, codebase: Codebase) => {
   const rl = createCLIInterface();

@@ -3,7 +3,7 @@ import { ModelProviderName } from "@elizaos/core";
 import { AgentRuntime } from "@elizaos/core";
 import Database from "better-sqlite3";
 import { SqliteDatabaseAdapter } from "@elizaos/adapter-sqlite";
-import { editFileAction } from "./actionManager";
+import { editFileAction } from "./actionManager.js";
 
 export const setupAgent = (codebase: any): AgentRuntime => {
   const character: Character = {
