@@ -4,20 +4,25 @@ import ora from "ora";
 import { AgentRuntime, generateText, ModelClass } from "@elizaos/core";
 import chalk from "chalk";
 import { Codebase } from "./scanner";
-import { LLMAction, actions, editFileAction } from "./actionManager";
+import {
+  LLMAction,
+  actions,
+  editFileAction,
+  executeWithConfirmation,
+} from "./actionManager";
 
 export const startCLI = (agent: AgentRuntime, codebase: Codebase) => {
   const rl = createCLIInterface();
 
-
-
   rl.on("line", async (userInput) => {
+    if (!userInput) return;
+
     console.log(`Received input: ${userInput}`);
 
-    ora('Processing...').start();
+    const spinner = ora("Processing user input...").start();
 
     const jsonCodebase = JSON.stringify(codebase);
-    const actionsList = actions.map(action => action.name).join(", ");
+    const actionsList = actions.map((action) => action.name).join(", ");
     const systemPrompt = `
     You are an assistant for code generation and code editing. You have access to a codebase and a set of possible actions.
 
@@ -46,15 +51,14 @@ export const startCLI = (agent: AgentRuntime, codebase: Codebase) => {
       modelClass: ModelClass.SMALL,
     });
 
-
-    console.log(chalk.cyan(res));
-
     const parsedRes: { actions: LLMAction[] } = JSON.parse(res);
 
+    spinner.stop();
+
+    console.log("ACTIONS: ", parsedRes.actions);
+
     for await (const action of parsedRes.actions) {
-      if (action.name === 'EDIT_FILE') {
-        await editFileAction.handler(agent, action)
-      }
+      await executeWithConfirmation(agent, action);
     }
   });
 };
@@ -64,6 +68,6 @@ const createCLIInterface = () => {
     input: process.stdin,
     output: process.stdout,
     terminal: true,
-    prompt: chalk.magenta("guidedao-code> ")
+    prompt: chalk.magenta("guidedao-code> "),
   });
 };

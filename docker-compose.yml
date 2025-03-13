@@ -1,0 +1,8 @@
+services:
+  app:
+    container_name: guidedao-code
+    build:
+      context: .
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
