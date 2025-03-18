@@ -9,7 +9,8 @@ export type ActionName =
   | "CREATE_FILE"
   | "DELETE_FILE"
   | "MOVE_FILE"
-  | "EXPLAIN_FILE";
+  | "EXPLAIN_FILE"
+  | "FIX_BROWSER_ERRORS";
 
 export type LLMAction = {
   name: ActionName;
@@ -23,6 +24,7 @@ export const actions = [
   { name: "DELETE_FILE", description: "Delete file" },
   { name: "MOVE_FILE", description: "Move file" },
   { name: "EXPLAIN_FILE", description: "Explain file" },
+  { name: "FIX_BROWSER_ERRORS", description: "Fix browser errors" },
 ];
 
 // export const editFileAction: Action = {
@@ -86,6 +88,7 @@ const actionHandlers = {
   DELETE_FILE: editFileAction.handler,
   MOVE_FILE: editFileAction.handler,
   EXPLAIN_FILE: editFileAction.handler,
+  FIX_BROWSER_ERRORS: editFileAction.handler,
 } as const;
 
 export const executeWithConfirmation = async (

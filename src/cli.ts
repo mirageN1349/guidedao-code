@@ -1,63 +1,26 @@
 import readline from "readline";
 import ora from "ora";
 
-import { AgentRuntime, generateText, ModelClass } from "@elizaos/core";
+import { AgentRuntime } from "@elizaos/core";
 import chalk from "chalk";
-import { Codebase } from "./scanner";
-import {
-  LLMAction,
-  actions,
-  editFileAction,
-  executeWithConfirmation,
-} from "./actionManager";
+import { executeWithConfirmation } from "./actionManager";
+import { makeActionsList } from "./llm/makeActionsList";
 
-export const startCLI = (agent: AgentRuntime, codebase: Codebase) => {
+export const startCLI = (agent: AgentRuntime) => {
   const rl = createCLIInterface();
 
   rl.on("line", async (userInput) => {
     if (!userInput) return;
 
-    console.log(`Received input: ${userInput}`);
-
     const spinner = ora("Processing user input...").start();
 
-    const jsonCodebase = JSON.stringify(codebase);
-    const actionsList = actions.map((action) => action.name).join(", ");
-    const systemPrompt = `
-    You are an assistant for code generation and code editing. You have access to a codebase and a set of possible actions.
-
-    Codebase information: ${jsonCodebase}
-
-    Available actions: ${actionsList}
-
-    User request: ${userInput}
-
-    Based on the user's request, determine the necessary changes to make to the codebase.
-    Return ONLY a JSON array of actions to take in the exact format:
-    {
-      actions: [
-        {
-          "name": "${actionsList}",
-          "filePath": "path/to/file.ts",
-          "prompt": "Detailed description of what should be done with this file"
-        }
-      ]
-    }
-    `;
-
-    const res = await generateText({
-      runtime: agent,
-      context: systemPrompt,
-      modelClass: ModelClass.SMALL,
-    });
-
-    const parsedRes: { actions: LLMAction[] } = JSON.parse(res);
+    const actions = await makeActionsList(agent, userInput);
 
     spinner.stop();
 
-    console.log("ACTIONS: ", parsedRes.actions);
+    console.log("ACTIONS: ", actions);
 
-    for await (const action of parsedRes.actions) {
+    for await (const action of actions) {
       await executeWithConfirmation(agent, action);
     }
   });

@@ -1,11 +1,11 @@
 import { setupAgent } from "./agent";
 import { startCLI } from "./cli";
-import { scanCodebase } from "./scanner";
+import { codebaseManager } from "./codebaseManager";
 
 export const setupCodeAssistant = async (projectPath: string) => {
   const agent = setupAgent("new agent");
 
-  const codebase = await scanCodebase(projectPath);
+  await codebaseManager.scanCodebase(projectPath);
 
-  startCLI(agent, codebase);
+  startCLI(agent);
 };
