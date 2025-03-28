@@ -3,9 +3,8 @@ import { ModelProviderName } from "@elizaos/core";
 import { AgentRuntime } from "@elizaos/core";
 import Database from "better-sqlite3";
 import { SqliteDatabaseAdapter } from "@elizaos/adapter-sqlite";
-import { editFileAction } from "./actionManager";
 
-export const setupAgent = (codebase: any): AgentRuntime => {
+export const setupAgent = (): AgentRuntime => {
   const character: Character = {
     name: "GuideDAO Code",
     adjectives: ["friendly", "helpful", "knowledgeable"],
@@ -35,7 +34,6 @@ export const setupAgent = (codebase: any): AgentRuntime => {
     modelProvider: ModelProviderName.ANTHROPIC,
     character,
     databaseAdapter,
-    // actions: [editFileAction]
   });
 
   agent.initialize();

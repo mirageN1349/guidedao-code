@@ -1,6 +1,7 @@
 import { AgentRuntime, generateText, ModelClass } from "@elizaos/core";
-import { actions, LLMAction } from "../actionManager";
-import { codebase } from "../codebaseManager";
+import { LLMAction } from "../actions/types";
+import { actions } from "../managers/actionManager";
+import { codebase } from "../managers/codebaseManager";
 
 export const makeActionsList = async (
   agent: AgentRuntime,
@@ -19,6 +20,7 @@ export const makeActionsList = async (
   User request: ${prompt}
 
   Based on the user's request, determine the necessary changes to make to the codebase.
+  Before every action run READ_FILE action
   Return ONLY a JSON array of actions to take in the exact format:
   {
     actions: [
@@ -34,10 +36,18 @@ export const makeActionsList = async (
   const res = await generateText({
     runtime: agent,
     context: systemPrompt,
-    modelClass: ModelClass.SMALL,
+    modelClass: ModelClass.LARGE,
   });
 
   const parsedRes: { actions: LLMAction[] } = JSON.parse(res);
 
   return parsedRes.actions;
 };
+
+// улучшить systemPrompt
+// Продумать систему подтверждений событий
+// Доработать систему модификации cобытий
+// Добавить MCP для браузера и для фигмы
+// добавить MCP Server RAG + supabase + Obsidian
+// интергация с github MCP
+//

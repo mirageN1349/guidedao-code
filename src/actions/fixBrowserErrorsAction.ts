@@ -2,15 +2,19 @@ import { AgentRuntime } from "@elizaos/core";
 import ora from "ora";
 import chalk from "chalk";
 
-import { LLMAction } from "../actionManager";
 import { mcpBrowserClient } from "../mcp-clients/browser-mcp-client";
 import { makeActionsList } from "../llm/makeActionsList";
+
+import { HandlerResponse, LLMAction } from "./types";
 
 export const fixBrowserErrorsAction = {
   name: "FIX_BROWSER_ERRORS",
   description: "Fix browser errors",
   similes: ["fix errros"],
-  handler: async (agent: AgentRuntime, action: LLMAction) => {
+  handler: async (
+    agent: AgentRuntime,
+    action: LLMAction,
+  ): Promise<HandlerResponse> => {
     try {
       const spinner = ora({
         text: "Extracting errors...",
@@ -22,7 +26,6 @@ export const fixBrowserErrorsAction = {
       const actions = makeActionsList(
         agent,
         `
-
         fix browser  errors ${mcpRes}
         `,
       );
@@ -30,10 +33,15 @@ export const fixBrowserErrorsAction = {
       spinner.stop();
 
       console.log(chalk.green(`✅ Successfully extracted errors from browser`));
+
+      return {
+        success: true,
+        context: `Successfully extracted browser errors.`,
+      };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to edit file ${action.filePath}: ${(error as any).message}`,
+        context: `Failed to extract browser errors: ${(error as any).message}`,
       };
     }
   },
