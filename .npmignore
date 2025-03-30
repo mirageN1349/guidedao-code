@@ -5,3 +5,4 @@ src
 .gitignore
 docker-compose.yml
 Dockerfile
+.env
