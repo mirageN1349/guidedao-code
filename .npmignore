@@ -1,0 +1,7 @@
+guidedao-code.db
+node_modules
+src
+.dockerignore
+.gitignore
+docker-compose.yml
+Dockerfile
