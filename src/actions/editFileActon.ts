@@ -2,7 +2,7 @@ import { AgentRuntime, generateText, ModelClass } from "@elizaos/core";
 import chalk from "chalk";
 import ora from "ora";
 import fs from "node:fs";
-import { HandlerResponse, LLMAction } from "./types";
+import { ActionContext, HandlerResponse, LLMAction } from "./types";
 
 export const editFileAction = {
   name: "EDIT_FILE",
@@ -17,7 +17,17 @@ export const editFileAction = {
       spinner.color = "red";
       const fileContent = await fs.promises.readFile(action.filePath, "utf-8");
 
-      const systemPrompt = `
+      const context: ActionContext = action.context || {
+        fileOperations: [],
+        notes: [],
+      };
+
+      let updatedContent: string;
+
+      if (action.code) {
+        updatedContent = action.code;
+      } else {
+        const systemPrompt = `
         Original file content:
         \`\`\`
         ${fileContent}
@@ -31,26 +41,59 @@ export const editFileAction = {
         Do not include any code fences or backticks in your response.
       `;
 
-      const res = await generateText({
-        runtime: agent,
-        context: systemPrompt,
-        modelClass: ModelClass.SMALL,
-      });
+        updatedContent = await generateText({
+          runtime: agent,
+          context: systemPrompt,
+          modelClass: ModelClass.SMALL,
+        });
+      }
 
-      await fs.promises.writeFile(action.filePath, res);
+      await fs.promises.writeFile(action.filePath, updatedContent);
 
       spinner.stop();
 
       console.log(chalk.green(`✅ Successfully edited ${action.filePath}`));
 
+      const successMessage = `Successfully edited ${action.filePath}`;
+
+      context.fileOperations.push({
+        type: "edit",
+        filePath: action.filePath,
+        description: `Edited file according to prompt: ${action.prompt.substring(0, 100)}${action.prompt.length > 100 ? "..." : ""}`,
+        timestamp: Date.now(),
+      });
+
+      context.lastActionResult = {
+        success: true,
+        message: successMessage,
+      };
+
+      context.notes.push(successMessage);
+
       return {
         success: true,
-        context: `File ${action.filePath} has been successfully edited.`,
+        context,
+        message: successMessage,
       };
     } catch (error) {
+      const errorMessage = `Failed to edit file ${action.filePath}: ${(error as any).message}`;
+
+      const errorContext: ActionContext = action.context || {
+        fileOperations: [],
+        notes: [],
+      };
+
+      errorContext.lastActionResult = {
+        success: false,
+        message: errorMessage,
+      };
+
+      errorContext.notes.push(errorMessage);
+
       return {
         success: false,
-        context: `Failed to edit file ${action.filePath}: ${(error as any).message}`,
+        context: errorContext,
+        message: errorMessage,
       };
     }
   },

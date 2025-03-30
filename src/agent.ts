@@ -33,6 +33,7 @@ export const setupAgent = (): AgentRuntime => {
     token: process.env.ANTHROPIC_API_KEY || "",
     modelProvider: ModelProviderName.ANTHROPIC,
     character,
+    logging: false,
     databaseAdapter,
   });
 
@@ -40,7 +41,6 @@ export const setupAgent = (): AgentRuntime => {
 
   return agent;
 };
-
 
 // {
 //   action: 'edit-file',

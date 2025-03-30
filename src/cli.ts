@@ -1,30 +1,71 @@
 import readline from "readline";
 import ora from "ora";
+import inquirer from "inquirer";
 
 import { AgentRuntime } from "@elizaos/core";
 import chalk from "chalk";
-import { makeActionsList } from "./llm/makeActionsList";
+import { chooseNextAction } from "./llm/makeActionsList";
 import { executeWithConfirmation } from "./managers/actionManager";
+import { contextManager } from "./managers/contextManager";
 
 export const startCLI = (agent: AgentRuntime) => {
   const rl = createCLIInterface();
 
   rl.on("line", async (userInput) => {
-    if (!userInput) return;
+    if (!userInput || userInput.toLowerCase() === "no") return;
 
-    console.log("userInput: ", userInput);
-    const spinner = ora("Processing user input...").start();
+    contextManager.resetContext();
+    let executionComplete = false;
 
-    const actions = await makeActionsList(agent, userInput);
+    while (!executionComplete) {
+      const spinner = ora("Thinking...").start();
+      const currentContext = contextManager.getContext();
 
-    spinner.stop();
+      const nextAction = await chooseNextAction(
+        agent,
+        userInput,
+        currentContext,
+      );
 
-    console.log("ACTIONS: ", actions);
+      spinner.stop();
 
-    let context = "";
-    for await (const action of actions) {
-      const res = await executeWithConfirmation(agent, { ...action, context });
-      context += res.context;
+      if (!nextAction) {
+        console.log(chalk.green("✅ All actions completed successfully."));
+        console.log(chalk.dim(contextManager.getContextSummary()));
+        executionComplete = true;
+        continue;
+      }
+
+      const actionToExecute = {
+        ...nextAction,
+        systemPrompt: nextAction.systemPrompt || "",
+      };
+
+      const res = await executeWithConfirmation(agent, actionToExecute);
+
+      if (res.message) {
+        contextManager.setLastActionResult(res.success, res.message);
+      }
+
+      contextManager.updateFromResponse(res.context);
+
+      if (!res.success) {
+        const { continueExecution } = await inquirer.prompt([
+          {
+            type: "confirm",
+            name: "continueExecution",
+            message:
+              "Action failed. Do you want to continue with the next action?",
+            default: true,
+          },
+        ]);
+
+        if (!continueExecution) {
+          console.log(chalk.yellow("⚠️ Execution stopped by user."));
+          console.log(chalk.dim(contextManager.getContextSummary()));
+          executionComplete = true;
+        }
+      }
     }
   });
 };

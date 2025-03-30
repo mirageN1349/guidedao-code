@@ -5,7 +5,7 @@ import chalk from "chalk";
 import { mcpBrowserClient } from "../mcp-clients/browser-mcp-client";
 import { makeActionsList } from "../llm/makeActionsList";
 
-import { HandlerResponse, LLMAction } from "./types";
+import { ActionContext, HandlerResponse, LLMAction } from "./types";
 
 export const fixBrowserErrorsAction = {
   name: "FIX_BROWSER_ERRORS",
@@ -15,6 +15,11 @@ export const fixBrowserErrorsAction = {
     agent: AgentRuntime,
     action: LLMAction,
   ): Promise<HandlerResponse> => {
+    const context: ActionContext = action.context || {
+      fileOperations: [],
+      notes: [],
+    };
+
     try {
       const spinner = ora({
         text: "Extracting errors...",
@@ -23,25 +28,43 @@ export const fixBrowserErrorsAction = {
 
       const mcpRes = await mcpBrowserClient.sendRequest("console-errors");
 
-      const actions = makeActionsList(
-        agent,
-        `
-        fix browser  errors ${mcpRes}
-        `,
-      );
+      await makeActionsList(agent, `fix browser errors ${mcpRes}`);
 
       spinner.stop();
 
       console.log(chalk.green(`✅ Successfully extracted errors from browser`));
 
+      const successMessage =
+        "Successfully extracted browser errors for analysis";
+
+      context.lastActionResult = {
+        success: true,
+        message: successMessage,
+      };
+
+      context.notes.push(successMessage);
+
+      context.notes.push(`Browser errors: ${mcpRes}`);
+
       return {
         success: true,
-        context: `Successfully extracted browser errors.`,
+        context,
+        message: successMessage,
       };
     } catch (error) {
+      const errorMessage = `Failed to extract browser errors: ${(error as any).message}`;
+
+      context.lastActionResult = {
+        success: false,
+        message: errorMessage,
+      };
+
+      context.notes.push(errorMessage);
+
       return {
         success: false,
-        context: `Failed to extract browser errors: ${(error as any).message}`,
+        context,
+        message: errorMessage,
       };
     }
   },

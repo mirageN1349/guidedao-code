@@ -2,7 +2,7 @@ import { AgentRuntime } from "@elizaos/core";
 import chalk from "chalk";
 import ora from "ora";
 import fs from "node:fs";
-import { HandlerResponse, LLMAction } from "./types";
+import { ActionContext, HandlerResponse, LLMAction } from "./types";
 
 export const readFileAction = {
   name: "READ_FILE",
@@ -12,15 +12,34 @@ export const readFileAction = {
     agent: AgentRuntime,
     action: LLMAction,
   ): Promise<HandlerResponse> => {
+    const context: ActionContext = action.context || {
+      fileOperations: [],
+      notes: [],
+    };
+
     try {
       const spinner = ora("Reading file...").start();
       spinner.color = "yellow";
 
       if (!fs.existsSync(action.filePath)) {
         spinner.stop();
+
+        const errorMessage = `File ${action.filePath} does not exist.`;
+
+        context.lastActionResult = {
+          success: false,
+          message: errorMessage,
+        };
+
+        if (!context.notes) {
+          context.notes = [];
+        }
+        context.notes.push(errorMessage);
+
         return {
           success: false,
-          context: `File ${action.filePath} does not exist.`,
+          context,
+          message: errorMessage,
         };
       }
 
@@ -30,18 +49,56 @@ export const readFileAction = {
 
       console.log(chalk.green(`✅ Successfully read ${action.filePath}`));
 
+      context.fileOperations.push({
+        type: "read",
+        filePath: action.filePath,
+        description: `Read file content for analysis`,
+        timestamp: Date.now(),
+      });
+
+      const successMessage = `Successfully read ${action.filePath}`;
+
+      context.lastActionResult = {
+        success: true,
+        message: successMessage,
+      };
+
+      if (!context.notes) {
+        context.notes = [];
+      }
+      context.notes.push(
+        `Read file ${action.filePath} (${fileContent.length} bytes)`,
+      );
+
+      const fileContentFormatted = `
+      File path: ${action.filePath}
+      File content: ${fileContent}
+      -----------------------------
+      `;
+      context.notes.push(fileContentFormatted);
+
       return {
         success: true,
-        context: `
-        File path: ${action.filePath}
-        File content:  ${fileContent}
-        -----------------------------
-         `,
+        context,
+        message: successMessage,
       };
     } catch (error) {
+      const errorMessage = `Failed to read file ${action.filePath}: ${(error as any).message}`;
+
+      context.lastActionResult = {
+        success: false,
+        message: errorMessage,
+      };
+
+      if (!context.notes) {
+        context.notes = [];
+      }
+      context.notes.push(errorMessage);
+
       return {
         success: false,
-        context: `Failed to read file ${action.filePath}: ${(error as any).message}`,
+        context,
+        message: errorMessage,
       };
     }
   },

@@ -17,7 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "@elizaos/adapter-sqlite": "0.25.6-alpha.1",
-    "@elizaos/core": "^0.25.8",
+    "@elizaos/core": "^0.25.9",
     "better-sqlite3": "^11.8.1",
     "boxen": "^8.0.1",
     "chalk": "^5.4.1",
@@ -26,6 +26,8 @@
     "figlet": "^1.8.0",
     "glob": "^11.0.1",
     "inquirer": "^12.4.3",
+    "marked": "^15.0.7",
+    "marked-terminal": "^7.3.0",
     "ora": "^8.2.0",
     "sharp": "^0.33.5"
   },
@@ -33,6 +35,8 @@
     "@types/better-sqlite3": "^7.6.12",
     "@types/diff": "^7.0.1",
     "@types/figlet": "^1.7.0",
+    "@types/marked-terminal": "^6.1.1",
+    "core": "link:@types/@elizaos/core",
     "esbuild": "0.25.0",
     "typescript": "^5.7.3"
   },

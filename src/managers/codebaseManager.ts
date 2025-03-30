@@ -4,7 +4,7 @@ import path from "path";
 
 type File = {
   path: string;
-  content: string;
+  // content: string;
   extension: string;
 };
 
@@ -42,7 +42,7 @@ export class CodebaseManager {
 
       files.push({
         path: filePath,
-        content,
+        // content
         extension: path.extname(filePath),
       });
     }
