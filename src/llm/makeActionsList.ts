@@ -1,5 +1,5 @@
 import { AgentRuntime, generateText, ModelClass } from "@elizaos/core";
-import { ActionContext, LLMAction } from "../actions/types";
+import { ActionContext, LLMAction, LLMResponse } from "../actions/types";
 import { contextManager } from "../managers/contextManager";
 import { actions } from "../managers/actionManager";
 import { codebase } from "../managers/codebaseManager";
@@ -8,7 +8,7 @@ export const chooseNextAction = async (
   agent: AgentRuntime,
   userPrompt: string,
   context: ActionContext,
-): Promise<LLMAction | null> => {
+): Promise<LLMResponse | null> => {
   const jsonCodebase = JSON.stringify(codebase);
   const actionsList = actions.map((action) => action.name).join(", ");
 
@@ -42,15 +42,20 @@ export const chooseNextAction = async (
 
     IMPORTANT WORKFLOW RULES:
     1. Before editing, creating, moving, or deleting any file, ALWAYS first use READ_FILE action to examine its content
-    2. READ_FILE actions are executed without user confirmation, so use them freely to understand the code
-    3. For complex tasks that involve multiple files, read all relevant files before making any changes
-    4. If a file uses imports or depends on other modules, ALWAYS examine those imported files first:
+    2. When you need to find specific files or code patterns related to a task, use the SEARCH_FILES action first
+       - Place search parameters in the 'code' field as JSON: {"pattern": "*.ts", "content": "function name"}
+       - The 'pattern' parameter supports glob patterns (e.g., "**/*.ts" or "src/components/*.tsx")
+       - The 'content' parameter searches inside files for specific text or code patterns
+       - Example: for finding TypeScript files with an interface: code: {"pattern": "**/*.ts", "content": "interface User"}
+    3. READ_FILE and SEARCH_FILES actions are executed without user confirmation, so use them freely to understand the code
+    4. For complex tasks that involve multiple files, read all relevant files before making any changes
+    5. If a file uses imports or depends on other modules, ALWAYS examine those imported files first:
        - Identify all import statements in the file you're working with
        - Use READ_FILE actions to read the imported files if they might be relevant to the problem
        - Include the content of these imported files in your analysis when generating your solution
        - This is especially important when the imported files contain types, interfaces, or utility functions
-    5. After reading a file, determine the appropriate next action based on its content and the user's request
-    6. NEVER read or modify the following files:
+    6. After reading a file, determine the appropriate next action based on its content and the user's request
+    7. NEVER read or modify the following files:
        - *lock.yml
        - package-lock.json
        - yarn.lock
@@ -62,6 +67,8 @@ export const chooseNextAction = async (
     7. Before creating the next action, analyze if it has already been performed in previous actions
     8. Use the context information to inform your decisions about what to do next
     9. Think step by step about what actions need to be taken to complete the user's request
+    10. When you need to read multiple files at once, consider returning an array of READ_FILE actions in a single response instead of sequential individual actions. This approach is more efficient and helps establish context faster.
+    11. To avoid infinite loops, you MUST check if your suggested action has already been performed in the context. If you find yourself suggesting the same or similar actions repeatedly, it's a strong indication that the task is complete and you should return null.
 
     CRITICAL FORMATTING REQUIREMENTS:
     - You MUST return ONLY the required JSON structure with no other text
@@ -70,9 +77,14 @@ export const chooseNextAction = async (
     - If you need to add context, notes, or explanations about your thought process, include them in the 'prompt' field
 
     Based on the user's request, the current context, and the execution plan, determine the NEXT action to take.
-    If all necessary actions have been completed, return null.
+    
+    IMPORTANT: If all necessary actions have been completed or if the task seems completed based on context, you MUST return null.
+    This is critical to prevent infinite loops. Carefully examine the context to determine if the user's request has been fully addressed.
+    If you believe the task is complete or no further actions are needed, return null.
 
-    Return EXACTLY ONE of these JSON structures, and NOTHING ELSE:
+    Return ONE of these JSON structures, and NOTHING ELSE:
+
+    Single action format:
     {
       "action": {
         "name": "ACTION_NAME",
@@ -84,10 +96,36 @@ export const chooseNextAction = async (
       }
     }
 
-    Or if all actions are completed:
+    Multiple actions format (useful for batching similar operations like multiple READ_FILE actions):
+    {
+      "action": [
+        {
+          "name": "ACTION_NAME",
+          "filePath": "path/to/file1.ts",
+          "prompt": "Detailed description of what should be done with file1.",
+          "systemPrompt": "",
+          "context": "",
+          "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content here."
+        },
+        {
+          "name": "ACTION_NAME",
+          "filePath": "path/to/file2.ts",
+          "prompt": "Detailed description of what should be done with file2.",
+          "systemPrompt": "",
+          "context": "",
+          "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content here."
+        }
+        // Additional actions can be included here
+      ]
+    }
+
+    Or if all actions are completed or the task seems finished based on context:
     {
       "action": null
     }
+    
+    REMEMBER: You MUST return {"action": null} when the task is completed or no further actions make sense.
+    This prevents infinite loops and ensures efficient processing.
 
     IMPORTANT: For CREATE_FILE and EDIT_FILE actions:
     - You MUST include a 'code' field with the complete file content. This should be the final code, not just changes or explanations.
@@ -145,51 +183,70 @@ export const chooseNextAction = async (
   }
 };
 
-/**
- * Gets a list of actions to execute for a given prompt
- */
 export const makeActionsList = async (
   agent: AgentRuntime,
   prompt: string,
   role?: "system" | "user",
 ): Promise<LLMAction[]> => {
-  // Reset the context manager for a fresh start
   contextManager.resetContext();
 
-  // Get the first action
-  const firstAction = await chooseNextAction(
+  const firstResponse = await chooseNextAction(
     agent,
     prompt,
     contextManager.getContext(),
   );
-  if (!firstAction) return [];
+  if (!firstResponse) return [];
 
-  const actions: LLMAction[] = [firstAction];
+  const actions: LLMAction[] = [];
 
-  // Update context for the first action
-  contextManager.addFileOperation(
-    "read",
-    firstAction.filePath,
-    `Executed action: ${firstAction.name}`,
-  );
+  if (Array.isArray(firstResponse)) {
+    actions.push(...firstResponse);
 
-  // Request subsequent actions until the LLM returns null
-  let nextAction = await chooseNextAction(
-    agent,
-    prompt,
-    contextManager.getContext(),
-  );
-  while (nextAction) {
-    actions.push(nextAction);
+    firstResponse.forEach((action) => {
+      contextManager.addFileOperation(
+        "read",
+        action.filePath,
+        `Executed action: ${action.name}`,
+      );
+    });
+  } else {
+    actions.push(firstResponse);
 
-    // Update context for each action
     contextManager.addFileOperation(
       "read",
-      nextAction.filePath,
-      `Executed action: ${nextAction.name}`,
+      firstResponse.filePath,
+      `Executed action: ${firstResponse.name}`,
     );
+  }
 
-    nextAction = await chooseNextAction(
+  let nextResponse = await chooseNextAction(
+    agent,
+    prompt,
+    contextManager.getContext(),
+  );
+
+  while (nextResponse) {
+    if (Array.isArray(nextResponse)) {
+      actions.push(...nextResponse);
+
+      nextResponse.forEach((action) => {
+        contextManager.addFileOperation(
+          "read",
+          action.filePath,
+          `Executed action: ${action.name}`,
+        );
+      });
+    } else {
+      actions.push(nextResponse);
+
+      contextManager.addFileOperation(
+        "read",
+        nextResponse.filePath,
+        `Executed action: ${nextResponse.name}`,
+      );
+    }
+
+    nextResponse = await chooseNextAction(
       agent,
       prompt,
       contextManager.getContext(),

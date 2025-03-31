@@ -110,6 +110,26 @@ GuideDAO Code integrates with:
 - Node.js 20+
 - pnpm 9+
 
+### System Requirements
+
+This package uses native modules (better-sqlite3) that require compilation during installation:
+
+- **macOS**: Make sure you have Xcode or Command Line Tools installed
+  ```bash
+  xcode-select --install
+  ```
+- **Linux**: Ensure you have build tools and SQLite development libraries
+  ```bash
+  # Ubuntu/Debian
+  sudo apt-get install build-essential python3 libsqlite3-dev
+  # RHEL/Fedora
+  sudo dnf install gcc-c++ make python3 sqlite-devel
+  ```
+- **Windows**: Install Visual Studio Build Tools and Python
+  ```bash
+  npm install --global --production windows-build-tools
+  ```
+
 ### Installing Dependencies
 
 ```bash

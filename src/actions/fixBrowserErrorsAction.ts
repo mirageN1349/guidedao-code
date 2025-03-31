@@ -32,10 +32,10 @@ export const fixBrowserErrorsAction = {
 
       spinner.stop();
 
-      console.log(chalk.green(`✅ Successfully extracted errors from browser`));
+      console.log(chalk.green(`🔧 Successfully extracted errors from browser`));
 
       const successMessage =
-        "Successfully extracted browser errors for analysis";
+        "🔧 Successfully extracted browser errors for analysis";
 
       context.lastActionResult = {
         success: true,

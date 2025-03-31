@@ -8,8 +8,9 @@ import { createFileAction } from "../actions/createFileAction";
 import { deleteFileAction } from "../actions/deleteFileAction";
 import { moveFileAction } from "../actions/moveFileAction";
 import { fixBrowserErrorsAction } from "../actions/fixBrowserErrorsAction";
-import { ActionContext, LLMAction } from "../actions/types";
+import { ActionContext, LLMAction, OperationType } from "../actions/types";
 import { readFileAction } from "../actions/readFile";
+import { searchFilesAction } from "../actions/searchFilesAction";
 import { contextManager } from "./contextManager";
 
 export const actions = [
@@ -18,6 +19,7 @@ export const actions = [
   { name: "DELETE_FILE", description: "Delete file" },
   { name: "MOVE_FILE", description: "Move file" },
   { name: "READ_FILE", description: "Read file" },
+  { name: "SEARCH_FILES", description: "Search files by pattern or content" },
   { name: "FIX_BROWSER_ERRORS", description: "Fix browser errors" },
 ];
 
@@ -27,12 +29,13 @@ const actionHandlers = {
   READ_FILE: readFileAction.handler,
   DELETE_FILE: deleteFileAction.handler,
   MOVE_FILE: moveFileAction.handler,
+  SEARCH_FILES: searchFilesAction,
   FIX_BROWSER_ERRORS: fixBrowserErrorsAction.handler,
 } as const;
 
 const getOperationTypeFromAction = (
   actionName: string,
-): "read" | "edit" | "create" | "delete" | "move" => {
+): OperationType => {
   switch (actionName) {
     case "READ_FILE":
       return "read";
@@ -45,6 +48,8 @@ const getOperationTypeFromAction = (
       return "delete";
     case "MOVE_FILE":
       return "move";
+    case "SEARCH_FILES":
+      return "search";
     default:
       return "read";
   }
@@ -243,7 +248,7 @@ export const executeWithConfirmation = async (
     `${action.name}: ${action.prompt.substring(0, 100)}${action.prompt.length > 100 ? "..." : ""}`,
   );
 
-  if (action.name === "READ_FILE") {
+  if (action.name === "READ_FILE" || action.name === "SEARCH_FILES") {
     const result = await handler(agent, action);
     return result;
   }

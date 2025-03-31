@@ -73,11 +73,11 @@ export const moveFileAction = {
 
       console.log(
         chalk.green(
-          `✅ Successfully moved ${action.filePath} to ${destinationPath}`,
+          `🔄 Successfully moved ${action.filePath} to ${destinationPath}`,
         ),
       );
 
-      const successMessage = `Successfully moved file from ${action.filePath} to ${destinationPath}`;
+      const successMessage = `🔄 Successfully moved file from ${action.filePath} to ${destinationPath}`;
 
       context.fileOperations.push({
         type: "move",

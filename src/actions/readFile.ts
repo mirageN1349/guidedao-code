@@ -47,7 +47,7 @@ export const readFileAction = {
 
       spinner.stop();
 
-      console.log(chalk.green(`✅ Successfully read ${action.filePath}`));
+      console.log(chalk.green(`📖 Successfully read ${action.filePath}`));
 
       context.fileOperations.push({
         type: "read",
@@ -56,7 +56,7 @@ export const readFileAction = {
         timestamp: Date.now(),
       });
 
-      const successMessage = `Successfully read ${action.filePath}`;
+      const successMessage = `📖 Successfully read ${action.filePath}`;
 
       context.lastActionResult = {
         success: true,

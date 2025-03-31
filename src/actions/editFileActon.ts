@@ -52,9 +52,9 @@ export const editFileAction = {
 
       spinner.stop();
 
-      console.log(chalk.green(`✅ Successfully edited ${action.filePath}`));
+      console.log(chalk.green(`✏️ Successfully edited ${action.filePath}`));
 
-      const successMessage = `Successfully edited ${action.filePath}`;
+      const successMessage = `✏️ Successfully edited ${action.filePath}`;
 
       context.fileOperations.push({
         type: "edit",

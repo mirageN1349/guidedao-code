@@ -25,12 +25,12 @@ export const setupAgent = (): AgentRuntime => {
     topics: [],
   };
 
-  const db = new Database("guidedao-code.db");
+  const db = new Database(":memory:");
   const databaseAdapter = new SqliteDatabaseAdapter(db);
   databaseAdapter.init();
 
   const agent = new AgentRuntime({
-    token: process.env.ANTHROPIC_API_KEY || "",
+    token: process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || "",
     modelProvider: ModelProviderName.ANTHROPIC,
     character,
     logging: false,

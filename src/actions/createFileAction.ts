@@ -50,9 +50,9 @@ export const createFileAction = {
 
       spinner.stop();
 
-      console.log(chalk.green(`✅ Successfully created ${action.filePath}`));
+      console.log(chalk.green(`🆕 Successfully created ${action.filePath}`));
 
-      const successMessage = `Successfully created ${action.filePath}`;
+      const successMessage = `🆕 Successfully created ${action.filePath}`;
 
       context.fileOperations.push({
         type: "create",

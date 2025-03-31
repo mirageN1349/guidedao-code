@@ -59,9 +59,9 @@ export const deleteFileAction = {
 
       spinner.stop();
 
-      console.log(chalk.green(`✅ Successfully deleted ${action.filePath}`));
+      console.log(chalk.green(`🗑️ Successfully deleted ${action.filePath}`));
 
-      const successMessage = `Successfully deleted ${action.filePath}`;
+      const successMessage = `🗑️ Successfully deleted ${action.filePath}`;
 
       context.fileOperations.push({
         type: "delete",
