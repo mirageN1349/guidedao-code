@@ -1,6 +1,6 @@
 {
   "name": "guidedao-code",
-  "version": "0.0.8",
+  "version": "0.1.0",
   "description": "Code Assistant",
   "main": "bin/guidedao-code.js",
   "type": "module",
@@ -8,8 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "esbuild src/index.ts --bundle --platform=node --packages=external --outfile=./dist/index.js --format=esm",
     "start": "node dist/index.js",
-    "postinstall": "npm rebuild better-sqlite3",
-    "install": "node-gyp rebuild"
+    "postinstall": "npm rebuild better-sqlite3"
   },
   "bin": {
     "guidedao-code": "./bin/guidedao-code.js"

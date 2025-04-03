@@ -3,7 +3,6 @@ import ora from "ora";
 import chalk from "chalk";
 
 import { mcpBrowserClient } from "../mcp-clients/browser-mcp-client";
-import { makeActionsList } from "../llm/makeActionsList";
 
 import { ActionContext, HandlerResponse, LLMAction } from "./types";
 
@@ -27,8 +26,6 @@ export const fixBrowserErrorsAction = {
       }).start();
 
       const mcpRes = await mcpBrowserClient.sendRequest("console-errors");
-
-      await makeActionsList(agent, `fix browser errors ${mcpRes}`);
 
       spinner.stop();
 

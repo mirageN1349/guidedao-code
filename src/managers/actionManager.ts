@@ -33,9 +33,7 @@ const actionHandlers = {
   FIX_BROWSER_ERRORS: fixBrowserErrorsAction.handler,
 } as const;
 
-const getOperationTypeFromAction = (
-  actionName: string,
-): OperationType => {
+const getOperationTypeFromAction = (actionName: string): OperationType => {
   switch (actionName) {
     case "READ_FILE":
       return "read";
@@ -88,10 +86,6 @@ export const executeWithConfirmation = async (
   if (!handler) {
     throw new Error(`Action ${action.name} not found`);
   }
-
-  // console.log(chalk.yellow(`Action: ${action.name}`));
-  // console.log(chalk.yellow(`File: ${action.filePath}`));
-  // console.log(chalk.yellow(`Prompt: ${action.prompt}`));
 
   if (
     (action.name === "CREATE_FILE" || action.name === "EDIT_FILE") &&

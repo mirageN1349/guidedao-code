@@ -1,5 +1,5 @@
 import { AgentRuntime, generateText, ModelClass } from "@elizaos/core";
-import { ActionContext, LLMAction, LLMResponse } from "../actions/types";
+import { ActionContext, LLMResponse } from "../actions/types";
 import { contextManager } from "../managers/contextManager";
 import { actions } from "../managers/actionManager";
 import { codebase } from "../managers/codebaseManager";
@@ -69,6 +69,11 @@ export const chooseNextAction = async (
     9. Think step by step about what actions need to be taken to complete the user's request
     10. When you need to read multiple files at once, consider returning an array of READ_FILE actions in a single response instead of sequential individual actions. This approach is more efficient and helps establish context faster.
     11. To avoid infinite loops, you MUST check if your suggested action has already been performed in the context. If you find yourself suggesting the same or similar actions repeatedly, it's a strong indication that the task is complete and you should return null.
+    12. CRITICAL: NEVER use APIs, functions, or methods that you haven't explicitly verified exist in the codebase. Follow these steps before using any API:
+       - First use SEARCH_FILES action to find where the API is defined or imported
+       - Then use READ_FILE to examine the API implementation
+       - Only after confirming the API exists and understanding how it works should you use it
+       - If you can't find the API in the codebase, DO NOT assume it exists or try to use it
 
     CRITICAL FORMATTING REQUIREMENTS:
     - You MUST return ONLY the required JSON structure with no other text
@@ -77,7 +82,7 @@ export const chooseNextAction = async (
     - If you need to add context, notes, or explanations about your thought process, include them in the 'prompt' field
 
     Based on the user's request, the current context, and the execution plan, determine the NEXT action to take.
-    
+
     IMPORTANT: If all necessary actions have been completed or if the task seems completed based on context, you MUST return null.
     This is critical to prevent infinite loops. Carefully examine the context to determine if the user's request has been fully addressed.
     If you believe the task is complete or no further actions are needed, return null.
@@ -123,7 +128,7 @@ export const chooseNextAction = async (
     {
       "action": null
     }
-    
+
     REMEMBER: You MUST return {"action": null} when the task is completed or no further actions make sense.
     This prevents infinite loops and ensures efficient processing.
 
@@ -134,7 +139,10 @@ export const chooseNextAction = async (
       2. Make sure you've examined the content of these imported files through READ_FILE actions
       3. Ensure your generated code correctly uses any types, interfaces, or functions from these imports
       4. If you're adding new imports, verify that these modules exist in the codebase
+      5. NEVER import or use modules, classes, functions, or APIs that you haven't explicitly verified exist in the codebase
+      6. If you need to use a specific class, function, or API, first use SEARCH_FILES to locate it, then READ_FILE to examine it
     - Maintain consistent coding style with the rest of the codebase
+    - When editing code that uses specific APIs or functions, always verify these functions exist and understand their parameters before using them
   `;
 
   const res = await generateText({
@@ -181,79 +189,6 @@ export const chooseNextAction = async (
       },
     };
   }
-};
-
-export const makeActionsList = async (
-  agent: AgentRuntime,
-  prompt: string,
-  role?: "system" | "user",
-): Promise<LLMAction[]> => {
-  contextManager.resetContext();
-
-  const firstResponse = await chooseNextAction(
-    agent,
-    prompt,
-    contextManager.getContext(),
-  );
-  if (!firstResponse) return [];
-
-  const actions: LLMAction[] = [];
-
-  if (Array.isArray(firstResponse)) {
-    actions.push(...firstResponse);
-
-    firstResponse.forEach((action) => {
-      contextManager.addFileOperation(
-        "read",
-        action.filePath,
-        `Executed action: ${action.name}`,
-      );
-    });
-  } else {
-    actions.push(firstResponse);
-
-    contextManager.addFileOperation(
-      "read",
-      firstResponse.filePath,
-      `Executed action: ${firstResponse.name}`,
-    );
-  }
-
-  let nextResponse = await chooseNextAction(
-    agent,
-    prompt,
-    contextManager.getContext(),
-  );
-
-  while (nextResponse) {
-    if (Array.isArray(nextResponse)) {
-      actions.push(...nextResponse);
-
-      nextResponse.forEach((action) => {
-        contextManager.addFileOperation(
-          "read",
-          action.filePath,
-          `Executed action: ${action.name}`,
-        );
-      });
-    } else {
-      actions.push(nextResponse);
-
-      contextManager.addFileOperation(
-        "read",
-        nextResponse.filePath,
-        `Executed action: ${nextResponse.name}`,
-      );
-    }
-
-    nextResponse = await chooseNextAction(
-      agent,
-      prompt,
-      contextManager.getContext(),
-    );
-  }
-
-  return actions;
 };
 
 // улучшить systemPrompt

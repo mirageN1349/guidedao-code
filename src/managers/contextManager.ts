@@ -1,16 +1,4 @@
-import { ActionContext, FileOperation, OperationType } from "../actions/types";
-
-const getOperationIcon = (type: OperationType): string => {
-  switch (type) {
-    case "read": return "📖";
-    case "edit": return "✏️";
-    case "create": return "🆕";
-    case "delete": return "🗑️";
-    case "move": return "🔄";
-    case "search": return "🔍";
-    default: return "";
-  }
-};
+import { ActionContext, FileOperation } from "../actions/types";
 
 export class ContextManager {
   private context: ActionContext;
