@@ -3,6 +3,7 @@ import chalk from "chalk";
 import ora from "ora";
 import fs from "node:fs";
 import { ActionContext, HandlerResponse, LLMAction } from "./types";
+import { contextManager } from "../managers/contextManager";
 
 export const deleteFileAction = {
   name: "DELETE_FILE",
@@ -34,7 +35,7 @@ export const deleteFileAction = {
         if (!context.notes) {
           context.notes = [];
         }
-        context.notes.push(errorMessage);
+        contextManager.addNote(errorMessage);
 
         return {
           success: false,
@@ -63,22 +64,21 @@ export const deleteFileAction = {
 
       const successMessage = `🗑️ Successfully deleted ${action.filePath}`;
 
-      context.fileOperations.push({
-        type: "delete",
-        filePath: action.filePath,
-        description: `Deleted file as requested: ${action.prompt.substring(0, 100)}${action.prompt.length > 100 ? "..." : ""}`,
-        timestamp: Date.now(),
-      });
+      contextManager.addFileOperation(
+        "delete",
+        action.filePath,
+        `Deleted file as requested: ${action.prompt.substring(0, 100)}${action.prompt.length > 100 ? "..." : ""}`,
+      );
 
       context.lastActionResult = {
         success: true,
         message: successMessage,
       };
 
-      context.notes.push(successMessage);
+      contextManager.addNote(successMessage);
 
       if (filePreview) {
-        context.notes.push(
+        contextManager.addNote(
           `Deleted file content preview: ${filePreview.split("\n")[0]}`,
         );
       }
@@ -96,7 +96,7 @@ export const deleteFileAction = {
         message: errorMessage,
       };
 
-      context.notes.push(errorMessage);
+      contextManager.addNote(errorMessage);
 
       return {
         success: false,

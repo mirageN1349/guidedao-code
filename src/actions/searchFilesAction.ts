@@ -5,6 +5,7 @@ import { HandlerResponse, LLMAction } from "./types";
 import { AgentRuntime } from "@elizaos/core";
 import chalk from "chalk";
 import ora from "ora";
+import { contextManager } from "../managers/contextManager";
 
 interface SearchParams {
   pattern?: string;
@@ -58,17 +59,19 @@ export const searchFilesAction = async (
       ),
     );
 
-    action.context.fileOperations.push({
-      type: "search",
-      filePath: params.pattern || "*",
-      description: `Searched for files with pattern '${params.pattern || "*"}' containing '${params.content || ""}'`,
-      timestamp: Date.now(),
-    });
+    contextManager.addFileOperation(
+      "search",
+      params.pattern || "*",
+      `Searched for files with pattern '${params.pattern || "*"}' containing '${params.content || ""}'`,
+    );
+
+    const message = formatSearchResults(searchResults);
+    contextManager.addNote(message);
 
     return {
       context: action.context,
       success: true,
-      message: formatSearchResults(searchResults),
+      message: message,
     };
   } catch (error) {
     console.error("Error searching files:", error);

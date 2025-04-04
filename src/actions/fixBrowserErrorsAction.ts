@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { mcpBrowserClient } from "../mcp-clients/browser-mcp-client";
 
 import { ActionContext, HandlerResponse, LLMAction } from "./types";
+import { contextManager } from "../managers/contextManager";
 
 export const fixBrowserErrorsAction = {
   name: "FIX_BROWSER_ERRORS",
@@ -39,9 +40,9 @@ export const fixBrowserErrorsAction = {
         message: successMessage,
       };
 
-      context.notes.push(successMessage);
+      contextManager.addNote(successMessage);
 
-      context.notes.push(`Browser errors: ${mcpRes}`);
+      contextManager.addNote(`Browser errors: ${mcpRes}`);
 
       return {
         success: true,
@@ -56,7 +57,7 @@ export const fixBrowserErrorsAction = {
         message: errorMessage,
       };
 
-      context.notes.push(errorMessage);
+      contextManager.addNote(errorMessage);
 
       return {
         success: false,

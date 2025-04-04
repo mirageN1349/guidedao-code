@@ -19,8 +19,7 @@ export const chooseNextAction = async (
     };
   }
 
-  const formattedContext = contextManager.formatContextForLLM();
-
+  const formattedContext = contextManager.getOptimzedContext();
   const systemPrompt = `
     You are an assistant for code generation and code editing. You have access to a codebase and a set of possible actions.
 

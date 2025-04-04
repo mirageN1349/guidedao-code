@@ -4,6 +4,7 @@ import ora from "ora";
 import fs from "node:fs";
 import path from "node:path";
 import { ActionContext, HandlerResponse, LLMAction } from "./types";
+import { contextManager } from "../managers/contextManager";
 
 export const createFileAction = {
   name: "CREATE_FILE",
@@ -54,26 +55,25 @@ export const createFileAction = {
 
       const successMessage = `🆕 Successfully created ${action.filePath}`;
 
-      context.fileOperations.push({
-        type: "create",
-        filePath: action.filePath,
-        description: `Created new file based on prompt: ${action.prompt.substring(0, 100)}${action.prompt.length > 100 ? "..." : ""}`,
-        timestamp: Date.now(),
-      });
+      contextManager.addFileOperation(
+        "create",
+        action.filePath,
+        `Created new file based on prompt: ${action.prompt.substring(0, 100)}${action.prompt.length > 100 ? "..." : ""}`,
+      );
 
       context.lastActionResult = {
         success: true,
         message: successMessage,
       };
 
-      context.notes.push(successMessage);
+      contextManager.addNote(successMessage);
 
       if (fileContent.length > 0) {
         const contentPreview =
           fileContent.length > 200
             ? fileContent.substring(0, 200) + "..."
             : fileContent;
-        context.notes.push(
+        contextManager.addNote(
           `File content preview: ${contentPreview.split("\n")[0]}`,
         );
       }
@@ -91,7 +91,7 @@ export const createFileAction = {
         message: errorMessage,
       };
 
-      context.notes.push(errorMessage);
+      contextManager.addNote(errorMessage);
 
       return {
         success: false,

@@ -3,6 +3,7 @@ import chalk from "chalk";
 import ora from "ora";
 import fs from "node:fs";
 import { ActionContext, HandlerResponse, LLMAction } from "./types";
+import { contextManager } from "../managers/contextManager";
 
 export const editFileAction = {
   name: "EDIT_FILE",
@@ -56,19 +57,18 @@ export const editFileAction = {
 
       const successMessage = `✏️ Successfully edited ${action.filePath}`;
 
-      context.fileOperations.push({
-        type: "edit",
-        filePath: action.filePath,
-        description: `Edited file according to prompt: ${action.prompt.substring(0, 100)}${action.prompt.length > 100 ? "..." : ""}`,
-        timestamp: Date.now(),
-      });
+      contextManager.addFileOperation(
+        "edit",
+        action.filePath,
+        `Edited file according to prompt: ${action.prompt.substring(0, 100)}${action.prompt.length > 100 ? "..." : ""}`,
+      );
 
       context.lastActionResult = {
         success: true,
         message: successMessage,
       };
 
-      context.notes.push(successMessage);
+      contextManager.addNote(successMessage);
 
       return {
         success: true,
@@ -88,7 +88,7 @@ export const editFileAction = {
         message: errorMessage,
       };
 
-      errorContext.notes.push(errorMessage);
+      contextManager.addNote(errorMessage);
 
       return {
         success: false,

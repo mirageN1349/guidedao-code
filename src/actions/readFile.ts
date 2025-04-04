@@ -3,6 +3,7 @@ import chalk from "chalk";
 import ora from "ora";
 import fs from "node:fs";
 import { ActionContext, HandlerResponse, LLMAction } from "./types";
+import { contextManager } from "../managers/contextManager";
 
 export const readFileAction = {
   name: "READ_FILE",
@@ -31,10 +32,7 @@ export const readFileAction = {
           message: errorMessage,
         };
 
-        if (!context.notes) {
-          context.notes = [];
-        }
-        context.notes.push(errorMessage);
+        contextManager.addNote(errorMessage);
 
         return {
           success: false,
@@ -49,12 +47,11 @@ export const readFileAction = {
 
       console.log(chalk.green(`📖 Successfully read ${action.filePath}`));
 
-      context.fileOperations.push({
-        type: "read",
-        filePath: action.filePath,
-        description: `Read file content for analysis`,
-        timestamp: Date.now(),
-      });
+      contextManager.addFileOperation(
+        "read",
+        action.filePath,
+        `Read file content for analysis`,
+      );
 
       const successMessage = `📖 Successfully read ${action.filePath}`;
 
@@ -63,10 +60,7 @@ export const readFileAction = {
         message: successMessage,
       };
 
-      if (!context.notes) {
-        context.notes = [];
-      }
-      context.notes.push(
+      contextManager.addNote(
         `Read file ${action.filePath} (${fileContent.length} bytes)`,
       );
 
@@ -75,7 +69,7 @@ export const readFileAction = {
       File content: ${fileContent}
       -----------------------------
       `;
-      context.notes.push(fileContentFormatted);
+      contextManager.addNote(fileContentFormatted);
 
       return {
         success: true,
@@ -90,10 +84,7 @@ export const readFileAction = {
         message: errorMessage,
       };
 
-      if (!context.notes) {
-        context.notes = [];
-      }
-      context.notes.push(errorMessage);
+      contextManager.addNote(errorMessage);
 
       return {
         success: false,

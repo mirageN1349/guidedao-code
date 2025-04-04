@@ -1,9 +1,13 @@
 {
   "name": "guidedao-code",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "description": "Code Assistant",
   "main": "bin/guidedao-code.js",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mirageN1349/guidedao-code"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "esbuild src/index.ts --bundle --platform=node --packages=external --outfile=./dist/index.js --format=esm",
@@ -17,6 +21,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/tokenizer": "^0.0.4",
     "@elizaos/adapter-sqlite": "0.25.6-alpha.1",
     "@elizaos/core": "^0.25.9",
     "better-sqlite3": "^11.8.1",

@@ -4,6 +4,7 @@ import ora from "ora";
 import fs from "node:fs";
 import path from "node:path";
 import { ActionContext, HandlerResponse, LLMAction } from "./types";
+import { contextManager } from "../managers/contextManager";
 
 export const moveFileAction = {
   name: "MOVE_FILE",
@@ -34,7 +35,7 @@ export const moveFileAction = {
           message: errorMessage,
         };
 
-        context.notes.push(errorMessage);
+        contextManager.addNote(errorMessage);
 
         return {
           success: false,
@@ -55,7 +56,7 @@ export const moveFileAction = {
           message: errorMessage,
         };
 
-        context.notes.push(errorMessage);
+        contextManager.addNote(errorMessage);
 
         return {
           success: false,
@@ -79,26 +80,24 @@ export const moveFileAction = {
 
       const successMessage = `🔄 Successfully moved file from ${action.filePath} to ${destinationPath}`;
 
-      context.fileOperations.push({
-        type: "move",
-        filePath: action.filePath,
-        description: `Moved file to ${destinationPath}`,
-        timestamp: Date.now(),
-      });
+      contextManager.addFileOperation(
+        "move",
+        action.filePath,
+        `Moved file to ${destinationPath}`,
+      );
 
-      context.fileOperations.push({
-        type: "create",
-        filePath: destinationPath,
-        description: `Created from moved file ${action.filePath}`,
-        timestamp: Date.now(),
-      });
+      contextManager.addFileOperation(
+        "create",
+        destinationPath,
+        `Created from moved file ${action.filePath}`,
+      );
 
       context.lastActionResult = {
         success: true,
         message: successMessage,
       };
 
-      context.notes.push(successMessage);
+      contextManager.addNote(successMessage);
 
       return {
         success: true,
@@ -113,7 +112,7 @@ export const moveFileAction = {
         message: errorMessage,
       };
 
-      context.notes.push(errorMessage);
+      contextManager.addNote(errorMessage);
 
       return {
         success: false,

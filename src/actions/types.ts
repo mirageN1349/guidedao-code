@@ -8,13 +8,20 @@ export type ActionName =
   | "SEARCH_FILES";
 
 // Define structured context types
-export type OperationType = "read" | "edit" | "create" | "delete" | "move" | "search";
+export type OperationType =
+  | "read"
+  | "edit"
+  | "create"
+  | "delete"
+  | "move"
+  | "search";
 
 export type FileOperation = {
   type: OperationType;
   filePath: string;
   description: string;
   timestamp: number;
+  tokensCount: number;
 };
 
 export type ActionContext = {
@@ -26,7 +33,10 @@ export type ActionContext = {
     message: string;
   };
   // Notes and additional information about the context
-  notes: string[];
+  notes: {
+    content: string;
+    tokensCount: number;
+  }[];
 };
 
 export type LLMAction = {
