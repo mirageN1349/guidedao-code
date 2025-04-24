@@ -3,6 +3,7 @@ import { ActionContext, LLMResponse } from "../actions/types";
 import { contextManager } from "../managers/contextManager";
 import { actions } from "../managers/actionManager";
 import { codebase } from "../managers/codebaseManager";
+import { mcpFactory } from "../mcp-clients/mcp-factory";
 
 export const chooseNextAction = async (
   agent: AgentRuntime,
@@ -18,6 +19,29 @@ export const chooseNextAction = async (
       notes: [],
     };
   }
+
+  let mcpContext = "";
+
+  const getMcpContext = async () => {
+    try {
+      const availableClients = mcpFactory.getClients();
+      for (const client of availableClients) {
+        if (client) {
+          const tools = await client.listTools();
+          // const resources = await client.listResources();
+          mcpContext += `
+            MCP Client: ${client.name}
+            Available Tools: ${JSON.stringify(tools)}
+          `;
+          // Available Resources: ${JSON.stringify(resources || {})} ^
+        }
+      }
+    } catch (error) {
+      mcpContext = `Error fetching MCP clients information: ${(error as Error).message}`;
+    }
+  };
+
+  await getMcpContext();
 
   const formattedContext = contextManager.getOptimzedContext();
   const systemPrompt = `
@@ -74,6 +98,30 @@ export const chooseNextAction = async (
        - Only after confirming the API exists and understanding how it works should you use it
        - If you can't find the API in the codebase, DO NOT assume it exists or try to use it
 
+    MCP (Model Context Protocol) INSTRUCTIONS:
+    You have access to MCP servers through the mcpFactory. Here are the available clients and their capabilities:
+    ${mcpContext}
+
+    To use an MCP client, you need to create a request in the following format:
+    {
+      "mcpRequestParams": {
+        "clientName": "The name of the MCP client to use",
+        "operation": "callTool" or "readResource",
+        "params": {
+          "name": "Name of the tool to call (for callTool operation)",
+          "arguments": { key1: value1, key2: value2, ... }, // Arguments for the tool
+          "uri": "URI of the resource to read (for readResource operation)"
+        }
+      }
+    }
+
+    Based on the available tools and resources listed above, you can:
+    1. Call tools using the "callTool" operation by specifying the tool name and required arguments
+    2. Read resources using the "readResource" operation by specifying the resource URI
+
+    IMPORTANT: Only use tools and resources that are actually available in the MCP clients listed above.
+    Before calling a tool or reading a resource, check if it exists in the available tools or resources.
+
     CRITICAL FORMATTING REQUIREMENTS:
     - You MUST return ONLY the required JSON structure with no other text
     - DO NOT include any explanations, notes, or comments outside the JSON
@@ -96,7 +144,16 @@ export const chooseNextAction = async (
         "prompt": "Detailed description of what should be done with this file. Include ANY additional notes or thoughts here.",
         "systemPrompt": "",
         "context": "",
-        "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content of the file here. This should be the complete code without any explanations or markdown."
+        "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content of the file here. This should be the complete code without any explanations or markdown.",
+        "mcpRequestParams": {
+          "clientName": "The name of the MCP client to use",
+          "operation": "callTool" or "readResource",
+          "params": {
+            "name": "Name of the tool to call (for callTool operation)",
+            "arguments": {}, // Arguments for the tool
+            "uri": "URI of the resource to read (for readResource operation)"
+          }
+        }
       }
     }
 
@@ -109,7 +166,16 @@ export const chooseNextAction = async (
           "prompt": "Detailed description of what should be done with file1.",
           "systemPrompt": "",
           "context": "",
-          "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content here."
+          "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content here.",
+          "mcpRequestParams": {
+            "clientName": "The name of the MCP client to use",
+            "operation": "callTool" or "readResource",
+            "params": {
+              "name": "Name of the tool to call (for callTool operation)",
+              "arguments": {}, // Arguments for the tool
+              "uri": "URI of the resource to read (for readResource operation)"
+            }
+          }
         },
         {
           "name": "ACTION_NAME",
@@ -117,7 +183,16 @@ export const chooseNextAction = async (
           "prompt": "Detailed description of what should be done with file2.",
           "systemPrompt": "",
           "context": "",
-          "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content here."
+          "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content here.",
+          "mcpRequestParams": {
+            "clientName": "The name of the MCP client to use",
+            "operation": "callTool" or "readResource",
+            "params": {
+              "name": "Name of the tool to call (for callTool operation)",
+              "arguments": {}, // Arguments for the tool
+              "uri": "URI of the resource to read (for readResource operation)"
+            }
+          }
         }
         // Additional actions can be included here
       ]
@@ -164,6 +239,8 @@ export const chooseNextAction = async (
       console.error("LLM response missing action field. Raw response:", res);
       return null;
     }
+
+    console.log("mcpContext: ", mcpContext);
 
     return parsedRes.action;
   } catch (error) {
