@@ -1,5 +1,6 @@
-import { calculatorMcpClient, ClientName } from "./calculator-mcp-client";
-import { McpClient } from "./mcp-client";
+import { calculatorMcpClient } from "./calculator-mcp-client";
+import { figmaMcpClient } from "./figma-mcp-client";
+import { ClientName, McpClient } from "./mcp-client";
 
 export type McpRequest = {
   clientName: ClientName;
@@ -11,7 +12,7 @@ export type McpRequest = {
   };
 };
 
-const clients = [calculatorMcpClient];
+const clients = [calculatorMcpClient, figmaMcpClient];
 
 export class McpFactory {
   private clients: Map<ClientName, McpClient> = new Map();

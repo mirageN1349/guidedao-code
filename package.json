@@ -24,6 +24,7 @@
     "@anthropic-ai/tokenizer": "^0.0.4",
     "@elizaos/adapter-sqlite": "0.25.6-alpha.1",
     "@elizaos/core": "^0.25.9",
+    "@modelcontextprotocol/sdk": "^1.10.2",
     "better-sqlite3": "^11.8.1",
     "boxen": "^8.0.1",
     "chalk": "^5.4.1",
@@ -35,7 +36,8 @@
     "marked": "^15.0.7",
     "marked-terminal": "^7.3.0",
     "ora": "^8.2.0",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "zod": "^3.24.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",

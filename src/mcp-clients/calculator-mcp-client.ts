@@ -2,8 +2,6 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { McpClient } from "./mcp-client";
 
-export type ClientName = "calculator" | "test";
-
 const transport = new StdioClientTransport({
   command: "node",
   args: ["src/mcp-servers/calculator.js"],

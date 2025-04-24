@@ -28,12 +28,12 @@ export const chooseNextAction = async (
       for (const client of availableClients) {
         if (client) {
           const tools = await client.listTools();
-          const resources = await client.listResources();
+          // const resources = await client.listResources();
           mcpContext += `
             MCP Client: ${client.name}
             Available Tools: ${JSON.stringify(tools)}
-            Available Resources: ${JSON.stringify(resources)}
           `;
+          // Available Resources: ${JSON.stringify(resources || {})} ^
         }
       }
     } catch (error) {
@@ -239,6 +239,8 @@ export const chooseNextAction = async (
       console.error("LLM response missing action field. Raw response:", res);
       return null;
     }
+
+    console.log("mcpContext: ", mcpContext);
 
     return parsedRes.action;
   } catch (error) {

@@ -1,5 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { ClientName } from "./calculator-mcp-client";
+
+export type ClientName = "calculator" | "test" | "figma";
 
 export class McpClient {
   name: ClientName;
@@ -18,8 +19,13 @@ export class McpClient {
     return this.client.listTools();
   }
 
-  listResources(): ReturnType<typeof this.client.listResources> {
-    return this.client.listResources();
+  async listResources(): Promise<
+    ReturnType<typeof this.client.listResourceTemplates> | undefined
+  > {
+    const list = await this.client.listResources();
+
+    if (list.resources.length) return this.client?.listResourceTemplates();
+    return undefined;
   }
 
   callTool(name: string, args: any): Promise<any> {

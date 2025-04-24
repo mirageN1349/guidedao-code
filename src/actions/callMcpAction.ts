@@ -29,7 +29,6 @@ export const callMcpAction = {
         };
       }
 
-      console.log("test", action.mcpRequestParams);
       const response = await mcpFactory.call(action.mcpRequestParams);
 
       console.log("response: ", response);
@@ -52,7 +51,7 @@ export const callMcpAction = {
         `Called MCP client ${action.mcpRequestParams.clientName}.  Response: ${JSON.stringify(response)}`,
       );
 
-      const successMessage = `📖 Successfully read ${action.filePath}`;
+      const successMessage = `📖 Successfully called ${action.mcpRequestParams.clientName}`;
 
       context.lastActionResult = {
         success: true,

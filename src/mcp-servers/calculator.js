@@ -20,7 +20,7 @@ server.tool(
 
 server.resource(
   "greeting",
-  new ResourceTemplate("greeting://{name}", { list: undefined }),
+  new ResourceTemplate("greeting://{name}", () => {}),
   async (uri, { name }) => ({
     contents: [
       {
@@ -33,7 +33,7 @@ server.resource(
 
 server.resource(
   "file",
-  new ResourceTemplate("file:///{fileName}", { list: undefined }),
+  new ResourceTemplate("file:///{fileName}", () => {}),
   async (uri, { fileName }) => ({
     contents: [
       {
@@ -46,7 +46,7 @@ server.resource(
 
 server.resource(
   "web",
-  new ResourceTemplate("web://{url}"),
+  new ResourceTemplate("web://{url}", () => {}),
   async (uri, { url }) => {
     const response = await fetch(decodeURIComponent(url));
     const text = await response.text();
