@@ -46,9 +46,9 @@ server.resource(
 
 server.resource(
   "web",
-  new ResourceTemplate("web://{url}", { list: undefined }),
+  new ResourceTemplate("web://{url}"),
   async (uri, { url }) => {
-    const response = await fetch(decodeURIComponent(url as string));
+    const response = await fetch(decodeURIComponent(url));
     const text = await response.text();
 
     return {

@@ -1,3 +1,5 @@
+import { McpRequest } from "../mcp-clients/mcp-factory";
+
 export type ActionName =
   | "EDIT_FILE"
   | "CREATE_FILE"
@@ -5,16 +7,17 @@ export type ActionName =
   | "MOVE_FILE"
   | "FIX_BROWSER_ERRORS"
   | "READ_FILE"
-  | "SEARCH_FILES";
+  | "SEARCH_FILES"
+  | "CALL_MCP";
 
-// Define structured context types
 export type OperationType =
   | "read"
   | "edit"
   | "create"
   | "delete"
   | "move"
-  | "search";
+  | "search"
+  | "call_mcp";
 
 export type FileOperation = {
   type: OperationType;
@@ -45,8 +48,8 @@ export type LLMAction = {
   prompt: string;
   systemPrompt: string;
   context: ActionContext;
-  // Field to store generated content
   code?: string;
+  mcpRequestParams?: McpRequest;
 };
 
 // Тип для поддержки как одиночных действий, так и массивов действий

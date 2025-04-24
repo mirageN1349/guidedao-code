@@ -12,6 +12,7 @@ import { ActionContext, LLMAction, OperationType } from "../actions/types";
 import { readFileAction } from "../actions/readFile";
 import { searchFilesAction } from "../actions/searchFilesAction";
 import { contextManager } from "./contextManager";
+import { callMcpAction } from "../actions/callMcpAction";
 
 export const actions = [
   { name: "EDIT_FILE", description: "Edit file" },
@@ -21,6 +22,7 @@ export const actions = [
   { name: "READ_FILE", description: "Read file" },
   { name: "SEARCH_FILES", description: "Search files by pattern or content" },
   { name: "FIX_BROWSER_ERRORS", description: "Fix browser errors" },
+  { name: "CALL_MCP", description: "Call MCP clients" },
 ];
 
 const actionHandlers = {
@@ -31,12 +33,15 @@ const actionHandlers = {
   MOVE_FILE: moveFileAction.handler,
   SEARCH_FILES: searchFilesAction,
   FIX_BROWSER_ERRORS: fixBrowserErrorsAction.handler,
+  CALL_MCP: callMcpAction.handler,
 } as const;
 
 const getOperationTypeFromAction = (actionName: string): OperationType => {
   switch (actionName) {
     case "READ_FILE":
       return "read";
+    case "CALL_MCP":
+      return "call_mcp";
     case "EDIT_FILE":
     case "FIX_BROWSER_ERRORS":
       return "edit";
