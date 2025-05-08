@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "outDir": "./dist",
     "rootDir": "./src",
@@ -14,7 +14,11 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "moduleDetection": "force",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react-jsx",
+    "emitDeclarationOnly": true,
+    "jsxImportSource": "react",
+    "allowImportingTsExtensions": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

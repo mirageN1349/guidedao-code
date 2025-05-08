@@ -12,7 +12,7 @@ export type McpRequest = {
   };
 };
 
-const clients = [calculatorMcpClient, figmaMcpClient];
+const clients = [calculatorMcpClient];
 
 export class McpFactory {
   private clients: Map<ClientName, McpClient> = new Map();
