@@ -1,9 +1,9 @@
 import { AgentRuntime, generateText, ModelClass } from "@elizaos/core";
-import { ActionContext, LLMResponse } from "../actions/types";
-import { contextManager } from "../managers/contextManager";
-import { actions } from "../managers/actionManager";
-import { codebase } from "../managers/codebaseManager";
-import { mcpFactory } from "../mcp-clients/mcp-factory";
+import { ActionContext, LLMResponse } from "../../actions/types";
+import { contextManager } from "../../managers/contextManager";
+import { actions } from "../../managers/actionManager";
+import { codebase } from "../../managers/codebaseManager";
+import { mcpFactory } from "../../mcp-clients/mcp-factory";
 
 export const chooseNextAction = async (
   agent: AgentRuntime,
