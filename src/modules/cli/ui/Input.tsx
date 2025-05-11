@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Text } from "ink";
+import { Box, Text, useStdout } from "ink";
 import TextInput from "ink-text-input";
 
 interface InputProps {
@@ -8,10 +8,17 @@ interface InputProps {
 
 const Input: React.FC<InputProps> = ({ onSubmit }) => {
   const [input, setInput] = useState("");
+  const { stdout } = useStdout();
 
   const handleSubmit = () => {
-    onSubmit(input);
-    setInput("");
+    if (input.trim()) {
+      setInput("");
+
+      setTimeout(() => {
+        stdout.write("\u001B[1A\u001B[2K");
+        onSubmit(input);
+      }, 5);
+    }
   };
 
   return (
