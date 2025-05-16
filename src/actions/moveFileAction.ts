@@ -1,4 +1,4 @@
-import { AgentRuntime } from "@elizaos/core";
+import { AnthropicClient } from "../anthropic-client";
 import chalk from "chalk";
 import ora from "ora";
 import fs from "node:fs";
@@ -11,7 +11,7 @@ export const moveFileAction = {
   description: "Move file",
   similes: ["move", "rename", "relocate"],
   handler: async (
-    agent: AgentRuntime,
+    agent: AnthropicClient,
     action: LLMAction,
   ): Promise<HandlerResponse> => {
     const context: ActionContext = action.context || {

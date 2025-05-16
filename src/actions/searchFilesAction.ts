@@ -2,7 +2,7 @@ import { glob } from "glob";
 import fs from "fs";
 import path from "path";
 import { HandlerResponse, LLMAction } from "./types";
-import { AgentRuntime } from "@elizaos/core";
+import { AnthropicClient } from "../anthropic-client";
 import chalk from "chalk";
 import ora from "ora";
 import { contextManager } from "../managers/contextManager";
@@ -18,7 +18,7 @@ interface SearchResult {
 }
 
 export const searchFilesAction = async (
-  agent: AgentRuntime,
+  agent: AnthropicClient,
   action: LLMAction,
 ): Promise<HandlerResponse> => {
   try {

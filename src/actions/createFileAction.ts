@@ -1,4 +1,4 @@
-import { AgentRuntime, generateText, ModelClass } from "@elizaos/core";
+import { AnthropicClient } from "../anthropic-client";
 import chalk from "chalk";
 import ora from "ora";
 import fs from "node:fs";
@@ -11,7 +11,7 @@ export const createFileAction = {
   description: "Create file",
   similes: ["create", "new", "add"],
   handler: async (
-    agent: AgentRuntime,
+    agent: AnthropicClient,
     action: LLMAction,
   ): Promise<HandlerResponse> => {
     const context: ActionContext = action.context || {
@@ -40,10 +40,9 @@ export const createFileAction = {
         Do not include any code fences or backticks in your response.
       `;
 
-        fileContent = await generateText({
-          runtime: agent,
-          context: systemPrompt,
-          modelClass: ModelClass.SMALL,
+        fileContent = await agent.generateText(systemPrompt, {
+          model: 'claude-3-7-sonnet-20250219',
+          maxTokens: 4096
         });
       }
 

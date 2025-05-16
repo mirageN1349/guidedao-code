@@ -1,4 +1,4 @@
-import { AgentRuntime } from "@elizaos/core";
+import { AnthropicClient } from "../anthropic-client";
 import chalk from "chalk";
 import ora from "ora";
 import fs from "node:fs";
@@ -10,7 +10,7 @@ export const deleteFileAction = {
   description: "Delete file",
   similes: ["delete", "remove", "erase"],
   handler: async (
-    agent: AgentRuntime,
+    agent: AnthropicClient,
     action: LLMAction,
   ): Promise<HandlerResponse> => {
     const context: ActionContext = action.context || {

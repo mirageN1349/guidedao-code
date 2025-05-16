@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
-export type ClientName = "calculator" | "test" | "figma";
+export type ClientName = "calculator" | "filesystem" | "figma";
 
 export class McpClient {
   name: ClientName;

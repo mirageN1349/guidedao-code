@@ -1,4 +1,4 @@
-import { AgentRuntime } from "@elizaos/core";
+import { AnthropicClient } from "../anthropic-client";
 import chalk from "chalk";
 import ora from "ora";
 import { ActionContext, HandlerResponse, LLMAction } from "./types";
@@ -10,7 +10,7 @@ export const callMcpAction = {
   description: "Call MCP",
   similes: ["call"],
   handler: async (
-    _agent: AgentRuntime,
+    _agent: AnthropicClient,
     action: LLMAction,
   ): Promise<HandlerResponse> => {
     const context: ActionContext = action.context || {
@@ -41,15 +41,14 @@ export const callMcpAction = {
         ),
       );
 
-      // contextManager.addFileOperation(
-      //   "read",
-      //   action.filePath,
-      //   `Read file content for analysis`,
+      // contextManager.addNote(
+      //   `Called MCP client ${action.mcpRequestParams.clientName}.  Response: ${JSON.stringify(response)}`,
       // );
       //
-      contextManager.addNote(
-        `Called MCP client ${action.mcpRequestParams.clientName}.  Response: ${JSON.stringify(response)}`,
-      );
+      context.notes.push({
+        content: `Called MCP client ${action.mcpRequestParams.clientName}.  Response: ${JSON.stringify(response)}`,
+        tokensCount: 1,
+      });
 
       const successMessage = `📖 Successfully called ${action.mcpRequestParams.clientName}`;
 
@@ -61,6 +60,7 @@ export const callMcpAction = {
       return {
         success: true,
         context,
+        toolName: action.mcpRequestParams.params.name,
         message: successMessage,
       };
     } catch (error) {
