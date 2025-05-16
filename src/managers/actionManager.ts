@@ -1,6 +1,5 @@
-import { AgentRuntime } from "@elizaos/core";
+import { AnthropicClient } from "../anthropic-client";
 import chalk from "chalk";
-import inquirer from "inquirer";
 import fs from "node:fs";
 import * as diffLib from "diff";
 import { editFileAction } from "../actions/editFileActon";
@@ -13,26 +12,30 @@ import { readFileAction } from "../actions/readFile";
 import { searchFilesAction } from "../actions/searchFilesAction";
 import { contextManager } from "./contextManager";
 import { callMcpAction } from "../actions/callMcpAction";
+import {
+  createConfirmationPromise,
+  generateActionDiff,
+} from "../modules/cli/lib/confirmationUtils";
 
 export const actions = [
-  { name: "EDIT_FILE", description: "Edit file" },
-  { name: "CREATE_FILE", description: "Create file" },
-  { name: "DELETE_FILE", description: "Delete file" },
-  { name: "MOVE_FILE", description: "Move file" },
-  { name: "READ_FILE", description: "Read file" },
-  { name: "SEARCH_FILES", description: "Search files by pattern or content" },
-  { name: "FIX_BROWSER_ERRORS", description: "Fix browser errors" },
+  // { name: "EDIT_FILE", description: "Edit file" },
+  // { name: "CREATE_FILE", description: "Create file" },
+  // { name: "DELETE_FILE", description: "Delete file" },
+  // { name: "MOVE_FILE", description: "Move file" },
+  // { name: "READ_FILE", description: "Read file" },
+  // { name: "SEARCH_FILES", description: "Search files by pattern or content" },
+  // { name: "FIX_BROWSER_ERRORS", description: "Fix browser errors" },
   { name: "CALL_MCP", description: "Call MCP clients" },
 ];
 
 const actionHandlers = {
-  EDIT_FILE: editFileAction.handler,
-  CREATE_FILE: createFileAction.handler,
-  READ_FILE: readFileAction.handler,
-  DELETE_FILE: deleteFileAction.handler,
-  MOVE_FILE: moveFileAction.handler,
-  SEARCH_FILES: searchFilesAction,
-  FIX_BROWSER_ERRORS: fixBrowserErrorsAction.handler,
+  // EDIT_FILE: editFileAction.handler,
+  // CREATE_FILE: createFileAction.handler,
+  // READ_FILE: readFileAction.handler,
+  // DELETE_FILE: deleteFileAction.handler,
+  // MOVE_FILE: moveFileAction.handler,
+  // SEARCH_FILES: searchFilesAction,
+  // FIX_BROWSER_ERRORS: fixBrowserErrorsAction.handler,
   CALL_MCP: callMcpAction.handler,
 } as const;
 
@@ -72,7 +75,7 @@ const ensureActionContext = (action: LLMAction): LLMAction => {
   }
 
   if (!action.context.notes) {
-    action.context.notes = [];
+    // action.context.notes = [];
   }
   if (!action.context.fileOperations) {
     action.context.fileOperations = [];
@@ -82,7 +85,7 @@ const ensureActionContext = (action: LLMAction): LLMAction => {
 };
 
 export const executeWithConfirmation = async (
-  agent: AgentRuntime,
+  agent: AnthropicClient,
   action: LLMAction,
 ) => {
   action = ensureActionContext(action);
@@ -92,154 +95,6 @@ export const executeWithConfirmation = async (
     throw new Error(`Action ${action.name} not found`);
   }
 
-  if (
-    (action.name === "CREATE_FILE" || action.name === "EDIT_FILE") &&
-    action.code
-  ) {
-    const boxWidth = 100;
-
-    const topLeft = "╔";
-    const topRight = "╗";
-    const bottomLeft = "╚";
-    const bottomRight = "╝";
-    const horizontal = "═";
-    const vertical = "║";
-    const leftT = "╠";
-    const rightT = "╣";
-
-    console.log(
-      "\n" +
-        chalk.cyan.bold(topLeft + horizontal.repeat(boxWidth - 2) + topRight),
-    );
-
-    // Draw title
-    const title = "📄 FILE CHANGES";
-    const padding = Math.floor((boxWidth - 2 - title.length) / 2);
-    console.log(
-      chalk.cyan.bold(vertical) +
-        " ".repeat(padding) +
-        chalk.cyan.bold(title) +
-        " ".repeat(boxWidth - 2 - title.length - padding) +
-        chalk.cyan.bold(vertical),
-    );
-
-    console.log(
-      chalk.cyan.bold(leftT + horizontal.repeat(boxWidth - 2) + rightT),
-    );
-
-    try {
-      const formatDiff = (diff: string): void => {
-        const lines = diff.split("\n");
-
-        for (const line of lines) {
-          let formattedLine;
-          const plainLine = line.replace(/\u001b\[\d+m/g, ""); // Remove ANSI color codes for length calc
-
-          if (
-            line.startsWith("+++ ") ||
-            line.startsWith("--- ") ||
-            line.startsWith("@@")
-          ) {
-            formattedLine = chalk.cyan(line);
-          } else if (line.startsWith("+")) {
-            formattedLine = chalk.green(line);
-          } else if (line.startsWith("-")) {
-            formattedLine = chalk.red(line);
-          } else {
-            formattedLine = line;
-          }
-
-          const padLength = Math.max(1, boxWidth - 3 - plainLine.length);
-          console.log(
-            chalk.cyan.bold(vertical) +
-              " " +
-              formattedLine +
-              " ".repeat(padLength) +
-              chalk.cyan.bold(vertical),
-          );
-        }
-      };
-
-      if (action.name === "CREATE_FILE") {
-        const subheader = `📝 Creating: ${action.filePath}`;
-        const subheaderPlain = subheader.replace(/\u001b\[\d+m/g, "");
-        console.log(
-          chalk.cyan.bold(vertical) +
-            " " +
-            chalk.cyan.bold(subheader) +
-            " ".repeat(Math.max(1, boxWidth - 3 - subheaderPlain.length)) +
-            chalk.cyan.bold(vertical),
-        );
-        console.log(
-          chalk.cyan.bold(leftT + horizontal.repeat(boxWidth - 2) + rightT),
-        );
-
-        const diffResult = diffLib.createPatch(
-          action.filePath,
-          "",
-          action.code,
-          "Empty file",
-          "New file content",
-        );
-        formatDiff(diffResult);
-      } else if (action.name === "EDIT_FILE") {
-        if (fs.existsSync(action.filePath)) {
-          const subheader = `✏️ Editing: ${action.filePath}`;
-          const subheaderPlain = subheader.replace(/\u001b\[\d+m/g, "");
-          console.log(
-            chalk.cyan.bold(vertical) +
-              " " +
-              chalk.cyan.bold(subheader) +
-              " ".repeat(Math.max(1, boxWidth - 3 - subheaderPlain.length)) +
-              chalk.cyan.bold(vertical),
-          );
-          console.log(
-            chalk.cyan.bold(leftT + horizontal.repeat(boxWidth - 2) + rightT),
-          );
-
-          const oldContent = fs.readFileSync(action.filePath, "utf-8");
-          const diffResult = diffLib.createPatch(
-            action.filePath,
-            oldContent,
-            action.code,
-            "Original content",
-            "Modified content",
-          );
-          formatDiff(diffResult);
-        } else {
-          const errorMsg = `⚠️ File ${action.filePath} does not exist for editing`;
-          console.log(
-            chalk.cyan.bold(vertical) +
-              " " +
-              chalk.red(errorMsg) +
-              " ".repeat(Math.max(1, boxWidth - 3 - errorMsg.length)) +
-              chalk.cyan.bold(vertical),
-          );
-        }
-      }
-
-      console.log(
-        chalk.cyan.bold(
-          bottomLeft + horizontal.repeat(boxWidth - 2) + bottomRight,
-        ),
-      );
-    } catch (error) {
-      const errorMsg = `Error generating diff: ${(error as any).message}`;
-      console.log(
-        chalk.cyan.bold(vertical) +
-          " " +
-          chalk.red(errorMsg) +
-          " ".repeat(Math.max(1, boxWidth - 3 - errorMsg.length)) +
-          chalk.cyan.bold(vertical),
-      );
-      console.log(
-        chalk.cyan.bold(
-          bottomLeft + horizontal.repeat(boxWidth - 2) + bottomRight,
-        ),
-      );
-    }
-  }
-
   const operationType = getOperationTypeFromAction(action.name);
   contextManager.addFileOperation(
     operationType,
@@ -247,54 +102,58 @@ export const executeWithConfirmation = async (
     `${action.name}: ${action.prompt.substring(0, 100)}${action.prompt.length > 100 ? "..." : ""}`,
   );
 
-  if (action.name === "READ_FILE" || action.name === "SEARCH_FILES") {
-    const result = await handler(agent, action);
-    return result;
-  }
+  // if (action.name === "READ_FILE" || action.name === "SEARCH_FILES") {
+  const result = await handler(agent, action);
+  return result;
+  // }
 
-  const { confirmation } = await inquirer.prompt([
-    {
-      type: "list",
-      name: "confirmation",
-      message: "Do you want to proceed with this action?",
-      choices: [
-        { name: "Yes", value: "yes" },
-        { name: "No", value: "no" },
-        { name: "Modify", value: "modify" },
-      ],
-    },
-  ]);
+  // const fileDiff = generateActionDiff(
+  //   action.name,
+  //   action.filePath,
+  //   action.code,
+  // );
 
-  if (confirmation === "no") {
-    console.log(chalk.red("❌ Action cancelled by user."));
-    const cancelContext: ActionContext = {
-      ...action.context,
-      lastActionResult: {
-        success: false,
-        message: "Action cancelled by user.",
-      },
-    };
+  // const confirmationResult = await createConfirmationPromise(
+  //   `Do you want to proceed with action: ${action.name}?`,
+  //   action.prompt,
+  //   fileDiff,
+  // );
 
-    return {
-      success: false,
-      context: cancelContext,
-      message: "Action cancelled by user.",
-    };
-  }
+  // // Clear the file diff after confirmation
+  // try {
+  //   if (action.updateFileDiff && typeof action.updateFileDiff === "function") {
+  //     action.updateFileDiff(undefined);
 
-  if (confirmation === "modify") {
-    const { modifiedPrompt } = await inquirer.prompt([
-      {
-        type: "input",
-        name: "modifiedPrompt",
-        message: "Enter modified prompt:",
-        default: action.prompt,
-      },
-    ]);
+  //     // Add a small delay to ensure UI state updates correctly
+  //     await new Promise((resolve) => setTimeout(resolve, 100));
+  //   }
+  // } catch (e) {
+  //   console.error("Error clearing file diff:", e);
+  // }
 
-    action.prompt = modifiedPrompt;
-    console.log(chalk.blue("Prompt modified. Continuing with updated prompt."));
-  }
+  // if (!confirmationResult.confirmed) {
+  //   console.log(chalk.red("❌ Action cancelled by user."));
+  //   const cancelContext: ActionContext = {
+  //     ...action.context,
+  //     lastActionResult: {
+  //       success: false,
+  //       message: "Action cancelled by user.",
+  //     },
+  //   };
 
-  return handler(agent, action);
+  // return {
+  //   success: false,
+  //   context: cancelContext,
+  //   message: "Action cancelled by user.",
+  // };
 };
+
+// if (confirmationResult.modifiedPrompt) {
+//   action.prompt = confirmationResult.modifiedPrompt;
+//   console.log(chalk.blue("Prompt modified. Continuing with updated prompt."));
+// }
+
+// const result = await handler(agent, action);
+// if (!result.success) {
+// }
+// return result;

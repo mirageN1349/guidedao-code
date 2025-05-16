@@ -1,4 +1,4 @@
-import { AgentRuntime } from "@elizaos/core";
+import { AnthropicClient } from "../anthropic-client";
 import ora from "ora";
 import chalk from "chalk";
 
@@ -12,7 +12,7 @@ export const fixBrowserErrorsAction = {
   description: "Fix browser errors",
   similes: ["fix errros"],
   handler: async (
-    agent: AgentRuntime,
+    agent: AnthropicClient,
     action: LLMAction,
   ): Promise<HandlerResponse> => {
     const context: ActionContext = action.context || {

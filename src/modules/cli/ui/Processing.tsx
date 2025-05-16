@@ -1,29 +1,32 @@
-import React from "react";
-import { Box, Newline, Text } from "ink";
+import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
+import { useEffect, useState } from "react";
 
 interface ProcessingProps {
   input: string;
 }
 
-const Processing: React.FC<ProcessingProps> = ({ input }) => {
-  return (
-    <Box flexDirection="column">
-      <Box borderStyle="round" borderColor="cyan" padding={1} marginBottom={1}>
-        <Text bold color="cyan">
-          Processing:{" "}
-        </Text>
-        <Text>{input}</Text>
-      </Box>
+function Processing({ input }: ProcessingProps) {
+  // Add a timestamp state to force re-render
+  const [timestamp, setTimestamp] = useState(Date.now());
 
-      {/* <Box>
-        <Text color="cyan">
-          <Spinner type="dots" />
-        </Text>
-        <Text color="cyan"> Thinking...</Text>
-      </Box> */}
+  // Force periodic re-renders to ensure component is visible
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimestamp(Date.now());
+    }, 500);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <Box marginBottom={1} key={`processing-${timestamp}`}>
+      <Text color="cyan">
+        <Spinner type="dots" />
+      </Text>
+      <Text color="cyan"> Processing {input}...</Text>
     </Box>
   );
-};
+}
 
 export default Processing;

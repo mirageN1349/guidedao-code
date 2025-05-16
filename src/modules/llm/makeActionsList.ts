@@ -1,12 +1,12 @@
-import { AgentRuntime, generateText, ModelClass } from "@elizaos/core";
-import { ActionContext, LLMResponse } from "../actions/types";
-import { contextManager } from "../managers/contextManager";
-import { actions } from "../managers/actionManager";
-import { codebase } from "../managers/codebaseManager";
-import { mcpFactory } from "../mcp-clients/mcp-factory";
+import { AnthropicClient } from "../../anthropic-client";
+import { ActionContext, LLMResponse } from "../../actions/types";
+import { contextManager } from "../../managers/contextManager";
+import { actions } from "../../managers/actionManager";
+import { codebase } from "../../managers/codebaseManager";
+import { mcpFactory } from "../../mcp-clients/mcp-factory";
 
 export const chooseNextAction = async (
-  agent: AgentRuntime,
+  agent: AnthropicClient,
   userPrompt: string,
   context: ActionContext,
 ): Promise<LLMResponse | null> => {
@@ -25,6 +25,7 @@ export const chooseNextAction = async (
   const getMcpContext = async () => {
     try {
       const availableClients = mcpFactory.getClients();
+
       for (const client of availableClients) {
         if (client) {
           const tools = await client.listTools();
@@ -37,7 +38,8 @@ export const chooseNextAction = async (
         }
       }
     } catch (error) {
-      mcpContext = `Error fetching MCP clients information: ${(error as Error).message}`;
+      const errorMsg = `Error fetching MCP clients information: ${(error as Error).message}`;
+      mcpContext = errorMsg;
     }
   };
 
@@ -56,29 +58,55 @@ export const chooseNextAction = async (
     Current context of what has been done so far:
     ${formattedContext}
 
-    THINKING PROCESS:
-    1. Understand what the user is asking you to do
-    2. Analyze the current context to see what has already been done
-    3. If this is a new request, start by exploring relevant files to understand the codebase first
-    4. Determine what files need to be examined or modified based on the user request
-    5. Think about the logical sequence of operations needed to fulfill the request
+    MISSION-CRITICAL GUARDRAILS:
+    1. TASK PERSISTENCE: Never abandon a task until it is fully completed. If you have begun implementing a feature or fixing a bug, you MUST continue until the task is completely finished.
+    2. COMPLETION VALIDATION: Before considering a task complete, explicitly verify that all requirements have been fully addressed:
+       - For modifications: Confirm all requested changes have been implemented
+       - For bug fixes: Ensure the root cause is addressed, not just symptoms
+       - For new features: Verify all functionality is fully implemented
+    3. TASK STATE TRACKING: Maintain a clear mental model of the current task state:
+       - Track what has been completed vs. what remains to be done
+       - If the current action doesn't fully complete the task, always plan and execute the next required action
+    4. NO PREMATURE TERMINATION: Never return null as an action until you are 100% confident the task is complete
+       - If in doubt, continue examining the codebase or perform additional verification steps
+       - Review your work against the original user request to confirm nothing was missed
 
-    IMPORTANT WORKFLOW RULES:
-    1. Before editing, creating, moving, or deleting any file, ALWAYS first use READ_FILE action to examine its content
-    2. When you need to find specific files or code patterns related to a task, use the SEARCH_FILES action first
-       - Place search parameters in the 'code' field as JSON: {"pattern": "*.ts", "content": "function name"}
-       - The 'pattern' parameter supports glob patterns (e.g., "**/*.ts" or "src/components/*.tsx")
-       - The 'content' parameter searches inside files for specific text or code patterns
-       - Example: for finding TypeScript files with an interface: code: {"pattern": "**/*.ts", "content": "interface User"}
-    3. READ_FILE and SEARCH_FILES actions are executed without user confirmation, so use them freely to understand the code
-    4. For complex tasks that involve multiple files, read all relevant files before making any changes
-    5. If a file uses imports or depends on other modules, ALWAYS examine those imported files first:
-       - Identify all import statements in the file you're working with
-       - Use READ_FILE actions to read the imported files if they might be relevant to the problem
-       - Include the content of these imported files in your analysis when generating your solution
-       - This is especially important when the imported files contain types, interfaces, or utility functions
-    6. After reading a file, determine the appropriate next action based on its content and the user's request
-    7. NEVER read or modify the following files:
+    THINKING PROCESS:
+    1. REQUIREMENT ANALYSIS: Develop a deep understanding of the user's request
+       - Identify all explicit and implicit requirements
+       - Break down complex tasks into clearly defined sub-tasks
+       - Create a mental checklist of all components that need to be addressed
+    2. CONTEXT ANALYSIS: Carefully analyze what has already been done
+       - Review the full context history to understand previous actions
+       - Identify which requirements have already been fulfilled and which remain
+    3. CODEBASE EXPLORATION: For new requests, explore relevant files to understand the codebase
+       - Map dependencies between files and modules
+       - Identify patterns and conventions used in the codebase
+    4. FILE MAPPING: Determine all files that need to be examined or modified
+       - Create a complete list of files relevant to the task
+       - Prioritize files based on their importance to the task
+    5. ACTION PLANNING: Develop a comprehensive sequence of operations
+       - Map out all steps required to complete the task
+       - Ensure each action contributes directly to task completion
+       - Plan verification steps to validate your work
+
+    ENHANCED WORKFLOW RULES:
+    1. THOROUGH EXPLORATION: Before any modifications, build a complete understanding of the code
+       - Examine all relevant files in the codebase
+       - Analyze patterns and references across the codebase
+       - Examine all dependencies and imports to understand how components interact
+    2. MULTI-FILE AWARENESS: For complex tasks, understand all relevant files before making changes
+       - Understand how files interact with each other
+       - Consider ripple effects of changes across the codebase
+    3. DEPENDENCY TRACING: Always examine dependencies before modifying code
+       - Identify all import statements in the target file
+       - Include imported files in your analysis when generating solutions
+       - Pay special attention to imported types, interfaces, and utility functions
+    4. ACTION SEQUENCING: After analysis, determine the optimal sequence of actions
+       - Start with building understanding
+       - Progress to modification actions only when sufficiently informed
+       - Group related actions together for efficiency
+    5. PROTECTED FILES: NEVER read or modify the following files:
        - *lock.yml
        - package-lock.json
        - yarn.lock
@@ -87,16 +115,22 @@ export const chooseNextAction = async (
        - .yarnrc
        - .pnpmrc
        - node_modules/**/*
-    7. Before creating the next action, analyze if it has already been performed in previous actions
-    8. Use the context information to inform your decisions about what to do next
-    9. Think step by step about what actions need to be taken to complete the user's request
-    10. When you need to read multiple files at once, consider returning an array of READ_FILE actions in a single response instead of sequential individual actions. This approach is more efficient and helps establish context faster.
-    11. To avoid infinite loops, you MUST check if your suggested action has already been performed in the context. If you find yourself suggesting the same or similar actions repeatedly, it's a strong indication that the task is complete and you should return null.
-    12. CRITICAL: NEVER use APIs, functions, or methods that you haven't explicitly verified exist in the codebase. Follow these steps before using any API:
-       - First use SEARCH_FILES action to find where the API is defined or imported
-       - Then use READ_FILE to examine the API implementation
-       - Only after confirming the API exists and understanding how it works should you use it
-       - If you can't find the API in the codebase, DO NOT assume it exists or try to use it
+    6. CONTEXT AWARENESS: Before suggesting actions, verify they haven't been performed
+       - Check the full context history to avoid redundant operations
+       - Build on previous actions rather than repeating them
+    7. STEP-BY-STEP EXECUTION: Break complex tasks into logical, sequential steps
+       - Each action should progress the task toward completion
+       - Ensure each step builds logically on previous steps
+    8. BATCH OPERATIONS: For related operations, use batched multi-action responses
+       - Group related actions in a single response
+       - This establishes context more efficiently and speeds up task completion
+    9. LOOP PREVENTION: Check if your suggested action has appeared in the context
+       - If similar actions keep repeating, this indicates either:
+         a) The approach needs to be changed (preferred)
+         b) The task may be complete (only if verified)
+    10. API VERIFICATION: Never use APIs without explicit verification
+       - Only use APIs after confirming they exist and understanding their behavior
+       - Never assume an API exists without verification
 
     MCP (Model Context Protocol) INSTRUCTIONS:
     You have access to MCP servers through the mcpFactory. Here are the available clients and their capabilities:
@@ -122,17 +156,33 @@ export const chooseNextAction = async (
     IMPORTANT: Only use tools and resources that are actually available in the MCP clients listed above.
     Before calling a tool or reading a resource, check if it exists in the available tools or resources.
 
+    FILE OPERATION REQUIREMENT:
+    All file manipulations (reading, creating, and editing files) MUST be performed ONLY through MCP callTool operation.
+    Direct file operations are NOT allowed - you must use the appropriate MCP clients and tools for any file-related actions.
+
     CRITICAL FORMATTING REQUIREMENTS:
     - You MUST return ONLY the required JSON structure with no other text
     - DO NOT include any explanations, notes, or comments outside the JSON
     - Include ALL reasoning and explanations within the 'prompt' field of the action
-    - If you need to add context, notes, or explanations about your thought process, include them in the 'prompt' field
+    - Make the 'prompt' field detailed and comprehensive, explaining your thought process and reasoning
+    - Include your plan for subsequent actions in the 'prompt' field, especially for complex tasks
+    - If you need clarification or have concerns, express them in the 'prompt' field
+    - NEVER leave information out of the JSON structure - all your thoughts must be captured
+
+    COMPLETION VERIFICATION:
+    Before returning {"action": null} to indicate task completion, perform this validation checklist:
+    1. Review the original user request and confirm ALL aspects have been addressed
+    2. Verify that all necessary files have been modified as required
+    3. Check for any side effects or dependencies that might need updating
+    4. Ensure all code changes are consistent with the codebase style and patterns
+    5. Confirm that the solution is complete and doesn't require further refinement
+    6. Only after explicit verification should you consider the task complete
 
     Based on the user's request, the current context, and the execution plan, determine the NEXT action to take.
 
-    IMPORTANT: If all necessary actions have been completed or if the task seems completed based on context, you MUST return null.
-    This is critical to prevent infinite loops. Carefully examine the context to determine if the user's request has been fully addressed.
-    If you believe the task is complete or no further actions are needed, return null.
+    IMPORTANT: You MUST continue taking actions until the user's request is fully addressed.
+    Return null ONLY when you are absolutely certain the task is complete and all requirements are satisfied.
+    When in doubt, continue exploring or implementing rather than prematurely terminating.
 
     Return ONE of these JSON structures, and NOTHING ELSE:
 
@@ -141,10 +191,9 @@ export const chooseNextAction = async (
       "action": {
         "name": "ACTION_NAME",
         "filePath": "path/to/file.ts",
-        "prompt": "Detailed description of what should be done with this file. Include ANY additional notes or thoughts here.",
+        "prompt": "Detailed description of what should be done with this file. Include your reasoning, analysis, and future action planning here. Be thorough and explicit about your thought process and how this action contributes to completing the overall task.",
         "systemPrompt": "",
         "context": "",
-        "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content of the file here. This should be the complete code without any explanations or markdown.",
         "mcpRequestParams": {
           "clientName": "The name of the MCP client to use",
           "operation": "callTool" or "readResource",
@@ -157,16 +206,15 @@ export const chooseNextAction = async (
       }
     }
 
-    Multiple actions format (useful for batching similar operations like multiple READ_FILE actions):
+    Multiple actions format (useful for batching similar operations):
     {
       "action": [
         {
           "name": "ACTION_NAME",
           "filePath": "path/to/file1.ts",
-          "prompt": "Detailed description of what should be done with file1.",
+          "prompt": "Detailed description of what should be done with file1, including your reasoning and how this contributes to the overall task.",
           "systemPrompt": "",
           "context": "",
-          "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content here.",
           "mcpRequestParams": {
             "clientName": "The name of the MCP client to use",
             "operation": "callTool" or "readResource",
@@ -180,10 +228,9 @@ export const chooseNextAction = async (
         {
           "name": "ACTION_NAME",
           "filePath": "path/to/file2.ts",
-          "prompt": "Detailed description of what should be done with file2.",
+          "prompt": "Detailed description of what should be done with file2, including your reasoning and how this contributes to the overall task.",
           "systemPrompt": "",
           "context": "",
-          "code": "For CREATE_FILE and EDIT_FILE actions, provide the full code content here.",
           "mcpRequestParams": {
             "clientName": "The name of the MCP client to use",
             "operation": "callTool" or "readResource",
@@ -198,31 +245,18 @@ export const chooseNextAction = async (
       ]
     }
 
-    Or if all actions are completed or the task seems finished based on context:
+    Or ONLY if all actions are 100% verified as complete (after rigorous validation):
     {
       "action": null
     }
 
-    REMEMBER: You MUST return {"action": null} when the task is completed or no further actions make sense.
-    This prevents infinite loops and ensures efficient processing.
-
-    IMPORTANT: For CREATE_FILE and EDIT_FILE actions:
-    - You MUST include a 'code' field with the complete file content. This should be the final code, not just changes or explanations.
-    - Before generating code, analyze all import statements and dependencies:
-      1. Identify all imported modules, types, and utilities that the file depends on
-      2. Make sure you've examined the content of these imported files through READ_FILE actions
-      3. Ensure your generated code correctly uses any types, interfaces, or functions from these imports
-      4. If you're adding new imports, verify that these modules exist in the codebase
-      5. NEVER import or use modules, classes, functions, or APIs that you haven't explicitly verified exist in the codebase
-      6. If you need to use a specific class, function, or API, first use SEARCH_FILES to locate it, then READ_FILE to examine it
-    - Maintain consistent coding style with the rest of the codebase
-    - When editing code that uses specific APIs or functions, always verify these functions exist and understand their parameters before using them
+    REMEMBER: You MUST NOT return {"action": null} until you have verified ALL aspects of the task are complete.
+    Premature termination is a critical failure. When in doubt, continue working on the task.
   `;
 
-  const res = await generateText({
-    runtime: agent,
-    context: systemPrompt,
-    modelClass: ModelClass.LARGE,
+  const res = await agent.generateText(systemPrompt, {
+    model: "claude-3-7-sonnet-20250219",
+    maxTokens: 4096,
   });
 
   try {
@@ -240,17 +274,13 @@ export const chooseNextAction = async (
       return null;
     }
 
-    console.log("mcpContext: ", mcpContext);
-
     return parsedRes.action;
   } catch (error) {
-    console.error(
-      `Error parsing LLM response: ${(error as any).message}. Raw response:`,
-      res,
-    );
+    const errorMsg = `Error parsing LLM response: ${(error as any).message}`;
+    console.error(`${errorMsg}. Raw response:`, res);
 
     return {
-      name: "READ_FILE",
+      name: "CALL_MCP",
       filePath: "README.md",
       prompt:
         "Reading README.md file to understand codebase structure due to error in previous action generation",

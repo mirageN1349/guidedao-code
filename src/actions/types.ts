@@ -1,14 +1,13 @@
 import { McpRequest } from "../mcp-clients/mcp-factory";
 
-export type ActionName =
-  | "EDIT_FILE"
-  | "CREATE_FILE"
-  | "DELETE_FILE"
-  | "MOVE_FILE"
-  | "FIX_BROWSER_ERRORS"
-  | "READ_FILE"
-  | "SEARCH_FILES"
-  | "CALL_MCP";
+export type ActionName = "CALL_MCP";
+// | "EDIT_FILE"
+// | "CREATE_FILE"
+// | "DELETE_FILE"
+// | "MOVE_FILE"
+// | "FIX_BROWSER_ERRORS"
+// | "READ_FILE"
+// | "SEARCH_FILES"
 
 export type OperationType =
   | "read"
@@ -50,6 +49,7 @@ export type LLMAction = {
   context: ActionContext;
   code?: string;
   mcpRequestParams?: McpRequest;
+  updateFileDiff?: (diff: any) => void;
 };
 
 // Тип для поддержки как одиночных действий, так и массивов действий
@@ -59,4 +59,5 @@ export type HandlerResponse = {
   context: ActionContext;
   success: boolean;
   message?: string;
+  toolName?: string;
 };

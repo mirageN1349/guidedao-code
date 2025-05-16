@@ -1,29 +1,50 @@
-import React, { useState } from "react";
-import { Box, Text } from "ink";
-import { AgentRuntime } from "@elizaos/core";
+import { useState } from "react";
+import { Box } from "ink";
+import { AnthropicClient } from "../../../anthropic-client";
 import Input from "./Input";
 import Processing from "./Processing";
 import Result from "./Result";
-import { contextManager } from "../../../managers/contextManager";
-import { chooseNextAction } from "../../llm/makeActionsList";
-import { executeWithConfirmation } from "../../../managers/actionManager";
+import Logs from "./Logs";
+import FileDiff from "./FileDiff";
+import { runUserCommand } from "../lib/actions";
+import { FileDiffOperation } from "../lib/diffUtils";
 
 interface AppProps {
-  agent: AgentRuntime;
+  agent: AnthropicClient;
 }
 
 enum AppState {
-  INPUT,
+  INITIAL,
   PROCESSING,
+  CONFIRMING,
   RESULT,
 }
 
 const App: React.FC<AppProps> = ({ agent }) => {
-  const [state, setState] = useState<AppState>(AppState.INPUT);
+  const [state, setState] = useState<AppState>(AppState.INITIAL);
   const [userInput, setUserInput] = useState<string>("");
   const [result, setResult] = useState<string>("");
   const [isSuccess, setIsSuccess] = useState<boolean>(true);
   const [contextSummary, setContextSummary] = useState<string>("");
+  const [fileDiff, setFileDiff] = useState<FileDiffOperation | undefined>(
+    undefined,
+  );
+
+  const [logs, setLogs] = useState<string[]>([]);
+  const addStatusLog = (message: string) => {
+    setLogs((prevLogs) => [...prevLogs, message]);
+  };
+
+  const updateFileDiff = (diff: FileDiffOperation | undefined) => {
+    setFileDiff(diff);
+    if (diff) {
+      setState(AppState.CONFIRMING);
+    } else if (state === AppState.CONFIRMING) {
+      // Force clear screen buffer before switching back to processing
+      process.stdout.write('\x1b[2J\x1b[0f');
+      setState(AppState.PROCESSING);
+    }
+  };
 
   const handleSubmit = async (input: string) => {
     if (!input || input.trim() === "") {
@@ -35,105 +56,57 @@ const App: React.FC<AppProps> = ({ agent }) => {
     }
 
     if (input.toLowerCase() === "clear") {
-      setState(AppState.INPUT);
+      setState(AppState.INITIAL);
+      setFileDiff(undefined);
       return;
     }
 
     setUserInput(input);
+    setFileDiff(undefined);
     setState(AppState.PROCESSING);
 
-    try {
-      contextManager.resetContext();
-      let executionComplete = false;
+    const commandResult = await runUserCommand(
+      agent,
+      input,
+      addStatusLog,
+      updateFileDiff,
+    );
 
-      while (!executionComplete) {
-        const currentContext = contextManager.getContext();
-        const nextResponse = await chooseNextAction(
-          agent,
-          input,
-          currentContext,
-        );
-
-        if (!nextResponse) {
-          setResult("All actions completed successfully.");
-          setContextSummary(contextManager.getContextSummary());
-          setIsSuccess(true);
-          executionComplete = true;
-          continue;
-        }
-
-        if (Array.isArray(nextResponse)) {
-          let allSuccessful = true;
-          for (const action of nextResponse) {
-            const actionToExecute = {
-              ...action,
-              systemPrompt: action.systemPrompt || "",
-            };
-
-            const res = await executeWithConfirmation(agent, actionToExecute);
-
-            if (res.message) {
-              contextManager.setLastActionResult(res.success, res.message);
-            }
-
-            contextManager.updateFromResponse(res.context);
-
-            if (!res.success) {
-              allSuccessful = false;
-              break;
-            }
-          }
-
-          setResult(
-            allSuccessful
-              ? "All actions completed successfully."
-              : "Some actions failed.",
-          );
-          setContextSummary(contextManager.getContextSummary());
-          setIsSuccess(allSuccessful);
-          executionComplete = true;
-        } else {
-          const actionToExecute = {
-            ...nextResponse,
-            systemPrompt: nextResponse.systemPrompt || "",
-          };
-
-          const res = await executeWithConfirmation(agent, actionToExecute);
-
-          if (res.message) {
-            contextManager.setLastActionResult(res.success, res.message);
-          }
-
-          contextManager.updateFromResponse(res.context);
-
-          if (!res.success) {
-            setResult("Action failed.");
-            setContextSummary(contextManager.getContextSummary());
-            setIsSuccess(false);
-            executionComplete = true;
-          }
-        }
-      }
-
-      setState(AppState.RESULT);
-    } catch (error) {
-      setResult(
-        `Error: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      setIsSuccess(false);
-      setState(AppState.RESULT);
+    // Before setting result, ensure we're not in CONFIRMING state
+    if (state === AppState.CONFIRMING) {
+      setState(AppState.PROCESSING);
+      // Small delay to ensure UI updates properly
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
+
+    setResult(commandResult.message);
+    setContextSummary(commandResult.contextSummary);
+    setIsSuccess(commandResult.success);
+    if (commandResult.fileDiff) {
+      setFileDiff(commandResult.fileDiff);
+    }
+    setState(AppState.RESULT);
   };
 
   const handleResultDone = () => {
-    setState(AppState.INPUT);
+    setState(AppState.INITIAL);
   };
 
   return (
     <Box flexDirection="column">
-      {state === AppState.INPUT && <Input onSubmit={handleSubmit} />}
+      {state === AppState.PROCESSING && (
+        <>
+          <Processing input={userInput} />
+        </>
+      )}
 
-      {state === AppState.PROCESSING && <Processing input={userInput} />}
+      {fileDiff && state === AppState.CONFIRMING && (
+        <FileDiff operation={fileDiff} boxWidth={100} />
+      )}
+
+      <Input onSubmit={handleSubmit} />
+
+      {/* <Logs logs={logs} /> */}
 
       {state === AppState.RESULT && (
         <Result

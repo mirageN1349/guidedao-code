@@ -1,9 +1,8 @@
-import React from "react";
 import { render } from "ink";
-import { AgentRuntime } from "@elizaos/core";
+import { AnthropicClient } from "../../anthropic-client";
 import App from "./ui/App";
 
-export const startCLI = (agent: AgentRuntime) => {
+export const startCLI = (agent: AnthropicClient) => {
   const { waitUntilExit } = render(<App agent={agent} />);
   return waitUntilExit();
 };
