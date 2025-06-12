@@ -15,7 +15,7 @@ export type McpRequest = {
 
 const clients = [calculatorMcpClient, filesystemMcpClient];
 
-export class McpFactory {
+class McpFactory {
   private clients: Map<ClientName, McpClient> = new Map();
 
   constructor() {
